@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,6 +52,7 @@ public class GatewayReceiverFactoryImplTest {
   public InternalCache cache;
 
   private GatewayReceiverFactoryImpl gatewayReceiverFactory;
+  private MeterRegistry meterRegistry;
 
   @Parameters(name = "{0}")
   public static Collection<InternalCache> cacheTypes() {
@@ -67,6 +70,7 @@ public class GatewayReceiverFactoryImplTest {
   @Before
   public void setUp() {
     when(cache.getGatewayReceivers()).thenReturn(Collections.emptySet());
+    when(cache.getMeterRegistry()).thenReturn(meterRegistry);
 
     gatewayReceiverFactory = new GatewayReceiverFactoryImpl(cache);
   }
@@ -280,6 +284,13 @@ public class GatewayReceiverFactoryImplTest {
     GatewayReceiver receiver = gatewayReceiverFactory.create();
 
     verify(cache).addGatewayReceiver(receiver);
+  }
+
+  @Test
+  public void createUsesMeterRegistryFromCache() {
+    gatewayReceiverFactory.create();
+
+    verify(cache).getMeterRegistry();
   }
 
   @Test

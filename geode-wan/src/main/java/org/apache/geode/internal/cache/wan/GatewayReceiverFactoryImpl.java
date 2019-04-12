@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.micrometer.core.instrument.MeterRegistry;
+
 import org.apache.geode.cache.wan.GatewayReceiver;
 import org.apache.geode.cache.wan.GatewayReceiverFactory;
 import org.apache.geode.cache.wan.GatewayTransportFilter;
@@ -129,9 +131,10 @@ public class GatewayReceiverFactoryImpl implements GatewayReceiverFactory {
 
     GatewayReceiver recv = null;
     if (this.cache instanceof GemFireCacheImpl) {
+      MeterRegistry meterRegistry = cache.getMeterRegistry();
       recv = new GatewayReceiverImpl(this.cache, this.startPort, this.endPort, this.timeBetPings,
           this.socketBuffSize, this.bindAdd, this.filters, this.hostnameForSenders,
-          this.manualStart);
+          this.manualStart, meterRegistry);
       this.cache.addGatewayReceiver(recv);
       InternalDistributedSystem system =
           (InternalDistributedSystem) this.cache.getDistributedSystem();
