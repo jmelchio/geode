@@ -15,10 +15,6 @@
 package org.apache.geode.management.internal.rest.security;
 
 
-import java.io.IOException;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,8 +30,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.AuthenticationEntryPoint;
 
 import org.apache.geode.management.api.ClusterManagementResult;
 
@@ -47,11 +41,14 @@ import org.apache.geode.management.api.ClusterManagementResult;
 @ComponentScan("org.apache.geode.management.internal.rest")
 public class RestSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
-  @Autowired
   private GeodeAuthenticationProvider authProvider;
+  private ObjectMapper objectMapper;
 
   @Autowired
-  private ObjectMapper objectMapper;
+  public RestSecurityConfiguration(GeodeAuthenticationProvider authProvider, ObjectMapper objectMapper) {
+    this.authProvider = authProvider;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   protected void configure(AuthenticationManagerBuilder auth) throws Exception {
@@ -73,19 +70,14 @@ public class RestSecurityConfiguration extends WebSecurityConfigurerAdapter {
         .anyRequest().authenticated().and().csrf().disable();
 
     if (this.authProvider.getSecurityService().isIntegratedSecurity()) {
-      http.httpBasic().authenticationEntryPoint(new AuthenticationEntryPoint() {
-        @Override
-        public void commence(HttpServletRequest request, HttpServletResponse response,
-            AuthenticationException authException)
-            throws IOException, ServletException {
-          response.addHeader("WWW-Authenticate", "Basic realm=\"GEODE\"");
-          response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-          response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
-          ClusterManagementResult result =
-              new ClusterManagementResult(ClusterManagementResult.StatusCode.UNAUTHENTICATED,
-                  authException.getMessage());
-          objectMapper.writeValue(response.getWriter(), result);
-        }
+      http.httpBasic().authenticationEntryPoint((request, response, authException) -> {
+        response.addHeader("WWW-Authenticate", "Basic realm=\"GEODE\"");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
+        ClusterManagementResult result =
+            new ClusterManagementResult(ClusterManagementResult.StatusCode.UNAUTHENTICATED,
+                authException.getMessage());
+        objectMapper.writeValue(response.getWriter(), result);
       });
     } else {
       http.authorizeRequests().anyRequest().permitAll();

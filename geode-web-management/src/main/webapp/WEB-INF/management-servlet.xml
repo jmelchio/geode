@@ -73,4 +73,7 @@
   </bean>
 
   <bean class="org.apache.geode.management.internal.rest.security.RestSecurityConfiguration"/>
+
+  <bean id="authProvider"
+        class="org.apache.geode.management.internal.rest.security.GeodeAuthenticationProvider" />
 </beans>
