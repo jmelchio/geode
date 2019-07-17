@@ -16,6 +16,7 @@ package org.apache.geode.management.cli;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -279,7 +280,11 @@ public abstract class GfshCommand implements CommandMarker {
 
   private boolean memberBeanDiskStoreExists(DistributedSystemMXBean dsMXBean, String memberName,
       String diskStore) {
-    return (Stream.of(dsMXBean.listMemberDiskstore().get(memberName))
+    return (Stream.of(dsMXBean)
+        .filter(Objects::nonNull)
+        .map(DistributedSystemMXBean::listMemberDiskstore)
+        .filter(Objects::nonNull)
+        .flatMap(mds -> Stream.of(mds.get(memberName)))
         .filter(dsName -> dsName.equals(diskStore))
         .findFirst().orElse(null) != null);
   }

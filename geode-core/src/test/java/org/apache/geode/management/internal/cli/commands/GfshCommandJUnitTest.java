@@ -108,4 +108,16 @@ public class GfshCommandJUnitTest {
     assertThat(command.diskStoreBeanAndMemberBeanDiskStoreExists(distributedSystemMXBean,
         memberName, diskStoreName)).isFalse();
   }
+
+  @Test
+  public void diskStoreBeanExistsMemberDiskStoreIsNull() throws Exception {
+    ObjectName objectName = new ObjectName("");
+
+    DistributedSystemMXBean distributedSystemMXBean = Mockito.mock(DistributedSystemMXBean.class);
+    doReturn(null).when(distributedSystemMXBean).listMemberDiskstore();
+    doReturn(objectName).when(distributedSystemMXBean).fetchDiskStoreObjectName(any(), any());
+
+    assertThat(command.diskStoreBeanAndMemberBeanDiskStoreExists(distributedSystemMXBean,
+        memberName, diskStoreName)).isFalse();
+  }
 }
