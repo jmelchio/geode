@@ -19,6 +19,7 @@ import java.util.Properties;
 
 import javax.servlet.ServletContext;
 
+import org.apache.logging.log4j.Logger;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.ServletContextAware;
 
 import org.apache.geode.internal.cache.InternalHttpService;
+import org.apache.geode.internal.logging.LogService;
 import org.apache.geode.internal.security.SecurityService;
 import org.apache.geode.management.internal.security.ResourceConstants;
 import org.apache.geode.security.GemFireSecurityException;
@@ -36,9 +38,9 @@ import org.apache.geode.security.GemFireSecurityException;
 
 @Component
 public class GeodeAuthenticationProvider implements AuthenticationProvider, ServletContextAware {
+  private static Logger logger = LogService.getLogger();
 
   private SecurityService securityService;
-
 
   public SecurityService getSecurityService() {
     return this.securityService;
@@ -54,6 +56,8 @@ public class GeodeAuthenticationProvider implements AuthenticationProvider, Serv
     if (password != null)
       credentials.put(ResourceConstants.PASSWORD, password);
 
+    logger.info("GeodeAuthProvider: " + authentication, new RuntimeException());
+
     try {
       securityService.login(credentials);
       return new UsernamePasswordAuthenticationToken(username, password,
@@ -65,6 +69,7 @@ public class GeodeAuthenticationProvider implements AuthenticationProvider, Serv
 
   @Override
   public boolean supports(Class<?> authentication) {
+    logger.info("supports? : " + authentication.getSimpleName());
     return authentication.isAssignableFrom(UsernamePasswordAuthenticationToken.class);
   }
 

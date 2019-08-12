@@ -21,13 +21,16 @@ import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_SHIR
 import java.util.Properties;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.Logger;
 
 import org.apache.geode.internal.cache.CacheConfig;
+import org.apache.geode.internal.logging.LogService;
 import org.apache.geode.internal.security.shiro.SecurityManagerProvider;
 import org.apache.geode.security.PostProcessor;
 import org.apache.geode.security.SecurityManager;
 
 public class SecurityServiceFactory {
+  private static Logger logger = LogService.getLogger();
 
   private SecurityServiceFactory() {
     // do not instantiate
@@ -51,6 +54,8 @@ public class SecurityServiceFactory {
 
   public static SecurityService create(Properties securityProps,
       SecurityManager preferredSecurityManager, PostProcessor preferredPostProcessor) {
+    logger.info("Security props: " + securityProps);
+
     if (securityProps == null) {
       // avoid NPE, and we can stil use preferredSecurityManager to create the service
       securityProps = new Properties();

@@ -16,6 +16,9 @@ package org.apache.geode.examples;
 
 import java.util.Properties;
 
+import org.apache.logging.log4j.Logger;
+
+import org.apache.geode.internal.logging.LogService;
 import org.apache.geode.security.AuthenticationFailedException;
 import org.apache.geode.security.ResourcePermission;
 import org.apache.geode.security.SecurityManager;
@@ -25,9 +28,11 @@ import org.apache.geode.security.SecurityManager;
  * the password, which also represents the permissions the user is granted.
  */
 public class SimpleSecurityManager implements SecurityManager {
+  private static Logger logger = LogService.getLogger();
 
   @Override
   public void init(final Properties securityProps) {
+    logger.info("Security properties: " + securityProps);
     // nothing
   }
 
@@ -35,15 +40,20 @@ public class SimpleSecurityManager implements SecurityManager {
   public Object authenticate(final Properties credentials) throws AuthenticationFailedException {
     String username = credentials.getProperty("security-username");
     String password = credentials.getProperty("security-password");
+
+    logger.info("Security Manager Credentials: " + username + ", " + password,
+        new RuntimeException());
+
     if (username != null && username.equals(password)) {
-      return username;
+      return username.toLowerCase().split(",");
     }
     throw new AuthenticationFailedException("invalid username/password");
   }
 
   @Override
   public boolean authorize(final Object principal, final ResourcePermission permission) {
-    String[] principals = principal.toString().toLowerCase().split(",");
+    logger.info("Manager auhorize: " + principal + " - " + permission, new RuntimeException());
+    String[] principals = (String[]) principal;
     for (String role : principals) {
       String permissionString = permission.toString().replace(":", "").toLowerCase();
       if (permissionString.startsWith(role))

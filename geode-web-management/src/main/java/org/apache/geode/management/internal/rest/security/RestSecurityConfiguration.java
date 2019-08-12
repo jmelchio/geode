@@ -22,6 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -36,7 +37,9 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
+import org.apache.geode.internal.logging.LogService;
 import org.apache.geode.management.api.ClusterManagementResult;
 
 @Configuration
@@ -46,6 +49,10 @@ import org.apache.geode.management.api.ClusterManagementResult;
 // otherwise this component scan will pick up the admin rest controllers as well.
 @ComponentScan("org.apache.geode.management.internal.rest")
 public class RestSecurityConfiguration extends WebSecurityConfigurerAdapter {
+  private static Logger logger = LogService.getLogger();
+
+  // @Value("${auth.type}")
+  private String authType = "TOKEN";
 
   @Autowired
   private GeodeAuthenticationProvider authProvider;
@@ -64,31 +71,59 @@ public class RestSecurityConfiguration extends WebSecurityConfigurerAdapter {
     return super.authenticationManagerBean();
   }
 
+  @Bean
+  public JwtAuthenticationFilter jwtAuthenticationFilter() throws Exception {
+    JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter();
+    jwtAuthenticationFilter.setFilterProcessesUrl("/experimental/**");
+    jwtAuthenticationFilter.setAuthenticationManager(authenticationManagerBean());
+    jwtAuthenticationFilter.setAuthenticationSuccessHandler((request, response, authentication) -> {
+    });
+    return jwtAuthenticationFilter;
+  }
+
+
   protected void configure(HttpSecurity http) throws Exception {
-    http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
+    http.sessionManagement()
+        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+        .and()
         .authorizeRequests()
         .antMatchers("/ping", "/docs/**", "/swagger-ui.html", "/experimental/api-docs/**",
             "/webjars/springfox-swagger-ui/**", "/swagger-resources/**")
         .permitAll()
-        .anyRequest().authenticated().and().csrf().disable();
+        .anyRequest()
+        .authenticated()
+        .and()
+        .csrf()
+        .disable();
+
+    logger.info("Security Service: " + this.authProvider.getSecurityService());
 
     if (this.authProvider.getSecurityService().isIntegratedSecurity()) {
-      http.httpBasic().authenticationEntryPoint(new AuthenticationEntryPoint() {
-        @Override
-        public void commence(HttpServletRequest request, HttpServletResponse response,
-            AuthenticationException authException)
-            throws IOException, ServletException {
-          response.addHeader("WWW-Authenticate", "Basic realm=\"GEODE\"");
-          response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-          response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
-          ClusterManagementResult result =
-              new ClusterManagementResult(ClusterManagementResult.StatusCode.UNAUTHENTICATED,
-                  authException.getMessage());
-          objectMapper.writeValue(response.getWriter(), result);
-        }
-      });
+      logger.info("Security Service and authType: " + this.authProvider.getSecurityService() + " "
+          + authType);
+      if (authType.equals("BASIC")) {
+        http.httpBasic().authenticationEntryPoint(new CustomAuthenticationEntryPoint());
+      } else {
+        http.addFilterBefore(jwtAuthenticationFilter(), BasicAuthenticationFilter.class);
+      }
     } else {
       http.authorizeRequests().anyRequest().permitAll();
+    }
+  }
+
+  private class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
+
+    @Override
+    public void commence(HttpServletRequest request, HttpServletResponse response,
+        AuthenticationException authException)
+        throws IOException, ServletException {
+      response.addHeader("WWW-Authenticate", "Basic realm=\"GEODE\"");
+      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+      response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
+      ClusterManagementResult result =
+          new ClusterManagementResult(ClusterManagementResult.StatusCode.UNAUTHENTICATED,
+              authException.getMessage());
+      objectMapper.writeValue(response.getWriter(), result);
     }
   }
 }
