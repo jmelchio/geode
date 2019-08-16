@@ -36,6 +36,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
@@ -72,13 +73,23 @@ public class RestSecurityConfiguration extends WebSecurityConfigurerAdapter {
   }
 
   @Bean
-  public JwtAuthenticationFilter jwtAuthenticationFilter() throws Exception {
-    JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter();
-    jwtAuthenticationFilter.setFilterProcessesUrl("/experimental/**");
-    jwtAuthenticationFilter.setAuthenticationManager(authenticationManagerBean());
-    jwtAuthenticationFilter.setAuthenticationSuccessHandler((request, response, authentication) -> {
+  public ClientCredentialsTokenEndpointFilter tokenEndpointFilter() throws Exception {
+    ClientCredentialsTokenEndpointFilter tokenEndpointFilter =
+        new ClientCredentialsTokenEndpointFilter();
+    tokenEndpointFilter.setFilterProcessesUrl("/experimental/**");
+    tokenEndpointFilter.setAuthenticationManager(authenticationManagerBean());
+    tokenEndpointFilter.setAuthenticationSuccessHandler((request, response, authentication) -> {
     });
-    return jwtAuthenticationFilter;
+    tokenEndpointFilter.setAuthenticationFailureHandler((request, response, authException) -> {
+      response.addHeader("WWW-Authenticate", "Basic realm=\"GEODE\"");
+      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+      response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
+      ClusterManagementResult result =
+          new ClusterManagementResult(ClusterManagementResult.StatusCode.UNAUTHENTICATED,
+              authException.getMessage());
+      objectMapper.writeValue(response.getWriter(), result);
+    });
+    return tokenEndpointFilter;
   }
 
 
@@ -104,7 +115,7 @@ public class RestSecurityConfiguration extends WebSecurityConfigurerAdapter {
       if (authType.equals("BASIC")) {
         http.httpBasic().authenticationEntryPoint(new CustomAuthenticationEntryPoint());
       } else {
-        http.addFilterBefore(jwtAuthenticationFilter(), BasicAuthenticationFilter.class);
+        http.addFilterAfter(tokenEndpointFilter(), BasicAuthenticationFilter.class);
       }
     } else {
       http.authorizeRequests().anyRequest().permitAll();
