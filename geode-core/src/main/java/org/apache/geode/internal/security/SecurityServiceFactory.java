@@ -15,6 +15,7 @@
 package org.apache.geode.internal.security;
 
 import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_CLIENT_AUTHENTICATOR;
+import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_MANAGEMENT_REST_TOKEN_AUTHENTICATION;
 import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_PEER_AUTHENTICATOR;
 import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_SHIRO_INIT;
 
@@ -76,13 +77,17 @@ public class SecurityServiceFactory {
       postProcessor = preferredPostProcessor;
     }
 
+    boolean restManagementTokenEnabled = Boolean
+        .parseBoolean(securityProps.getProperty(SECURITY_MANAGEMENT_REST_TOKEN_AUTHENTICATION));
     if (StringUtils.isNotBlank(shiroConfig)) {
-      return new IntegratedSecurityService(new SecurityManagerProvider(shiroConfig), postProcessor);
+      return new IntegratedSecurityService(new SecurityManagerProvider(shiroConfig), postProcessor,
+          restManagementTokenEnabled);
     } else if (securityManager != null) {
       return new IntegratedSecurityService(new SecurityManagerProvider(securityManager),
-          postProcessor);
+          postProcessor, restManagementTokenEnabled);
     } else if (isShiroInUse()) {
-      return new IntegratedSecurityService(new SecurityManagerProvider(), postProcessor);
+      return new IntegratedSecurityService(new SecurityManagerProvider(), postProcessor,
+          restManagementTokenEnabled);
     }
 
     // if not return legacy security service

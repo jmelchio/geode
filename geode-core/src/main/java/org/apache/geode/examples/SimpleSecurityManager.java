@@ -40,10 +40,15 @@ public class SimpleSecurityManager implements SecurityManager {
   public Object authenticate(final Properties credentials) throws AuthenticationFailedException {
     String username = credentials.getProperty("security-username");
     String password = credentials.getProperty("security-password");
+    String token = credentials.getProperty("security-token");
 
-    logger.info("Security Manager Credentials: " + username + ", " + password,
+    logger.info("Security Manager Credentials: " + username + ", " + password + " ",
         new RuntimeException());
 
+    if (token != null) {
+      logger.info("Found the token: " + token);
+      return token.toLowerCase().split(",");
+    }
     if (username != null && username.equals(password)) {
       return username.toLowerCase().split(",");
     }

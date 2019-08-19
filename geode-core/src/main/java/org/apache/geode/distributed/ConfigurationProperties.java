@@ -1558,9 +1558,28 @@ public interface ConfigurationProperties {
    * The static String definition of the <i>"security-peer-verifymember-timeout"</i> property
    */
   String SECURITY_PEER_VERIFY_MEMBER_TIMEOUT = SECURITY_PREFIX + "peer-verifymember-timeout";
+
+  /**
+   * The static String definition of the <i>"security-management-rest-token-authentication"</i>
+   * <a name="security-management-rest-token-authentication"/>
+   * <p>
+   * <U>Description</U>: If this property is set to 'true' the REST service will attempt to
+   * authenticate request with a Bearer token passed in the 'Authentication' header of the REST
+   * request.
+   * If this property is set to 'false' the REST service will attempt to authenticate with
+   * 'username' and 'password' as part of a BASIC authentication scheme.
+   * This property is ignored if no {@link #SECURITY_MANAGER} is set
+   * <p>
+   * <U>Default</U>: "false"
+   *
+   * @since Geode 1.11
+   */
+  String SECURITY_MANAGEMENT_REST_TOKEN_AUTHENTICATION =
+      SECURITY_PREFIX + "management-rest-token-authentication";
+
   /**
    * The static String definition of the <i>"server-bind-address"</i> property <a
-   * name="server-bind-address"/a>
+   * name="server-bind-address"/>
    * <p>
    * <U>Description</U>: The IP address that this distributed system's server sockets in a
    * client-server topology will listen on. If set to an empty string then all of the local

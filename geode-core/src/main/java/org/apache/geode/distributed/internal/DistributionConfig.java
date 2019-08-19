@@ -125,6 +125,7 @@ import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_CLIE
 import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_CLIENT_DHALGO;
 import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_LOG_FILE;
 import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_LOG_LEVEL;
+import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_MANAGEMENT_REST_TOKEN_AUTHENTICATION;
 import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_MANAGER;
 import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_PEER_AUTHENTICATOR;
 import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_PEER_AUTH_INIT;
@@ -2623,6 +2624,27 @@ public interface DistributionConfig extends Config, LogConfig, StatisticsConfig 
 
   String SECURITY_PREFIX_NAME = SECURITY_PREFIX;
 
+  /**
+   * Sets the value for
+   * {@link ConfigurationProperties#SECURITY_MANAGEMENT_REST_TOKEN_AUTHENTICATION}
+   */
+  @ConfigAttributeSetter(name = SECURITY_MANAGEMENT_REST_TOKEN_AUTHENTICATION)
+  void setSecurityManagementRestTokenAuthentication(boolean newValue);
+
+  /**
+   * Returns the value of
+   * {@link ConfigurationProperties#SECURITY_MANAGEMENT_REST_TOKEN_AUTHENTICATION} property
+   */
+  @ConfigAttributeGetter(name = SECURITY_MANAGEMENT_REST_TOKEN_AUTHENTICATION)
+  boolean getSecurityManagementRestTokenAuthentication();
+
+  /**
+   * the name of the {@link ConfigurationProperties#SECURITY_MANAGEMENT_REST_TOKEN_AUTHENTICATION}
+   * property
+   */
+  @ConfigAttribute(type = Boolean.class)
+  String SECURITY_MANAGEMENT_REST_TOKEN_AUTHENTICATION_NAME =
+      SECURITY_MANAGEMENT_REST_TOKEN_AUTHENTICATION;
 
   /**
    * The static String definition of the cluster ssl prefix <i>"cluster-ssl"</i> used in conjunction

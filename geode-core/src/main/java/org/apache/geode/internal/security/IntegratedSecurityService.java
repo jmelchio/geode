@@ -63,6 +63,26 @@ public class IntegratedSecurityService implements SecurityService {
   private final AtomicBoolean closed = new AtomicBoolean();
   private final PostProcessor postProcessor;
   private final SecurityManager securityManager;
+  private final boolean restManagmentTokenEnabled;
+
+  /**
+   * this creates a security service using a SecurityManager
+   *
+   * @param provider this provides shiro security manager
+   * @param postProcessor this can be null
+   * @param restManagmentTokenEnabled use Bearer token for REST authentication
+   */
+  IntegratedSecurityService(SecurityManagerProvider provider, PostProcessor postProcessor,
+      boolean restManagmentTokenEnabled) {
+    // provider must provide a shiro security manager, otherwise, this is not integrated security
+    // service at all.
+    assert provider.getShiroSecurityManager() != null;
+    SecurityUtils.setSecurityManager(provider.getShiroSecurityManager());
+
+    securityManager = provider.getSecurityManager();
+    this.postProcessor = postProcessor;
+    this.restManagmentTokenEnabled = restManagmentTokenEnabled;
+  }
 
   /**
    * this creates a security service using a SecurityManager
@@ -71,13 +91,7 @@ public class IntegratedSecurityService implements SecurityService {
    * @param postProcessor this can be null
    */
   IntegratedSecurityService(SecurityManagerProvider provider, PostProcessor postProcessor) {
-    // provider must provide a shiro security manager, otherwise, this is not integrated security
-    // service at all.
-    assert provider.getShiroSecurityManager() != null;
-    SecurityUtils.setSecurityManager(provider.getShiroSecurityManager());
-
-    securityManager = provider.getSecurityManager();
-    this.postProcessor = postProcessor;
+    this(provider, postProcessor, false);
   }
 
   @Override
@@ -342,5 +356,10 @@ public class IntegratedSecurityService implements SecurityService {
   @Override
   public boolean isPeerSecurityRequired() {
     return true;
+  }
+
+  @Override
+  public boolean isRestManagementTokenEnabled() {
+    return this.restManagmentTokenEnabled;
   }
 }

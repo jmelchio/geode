@@ -125,6 +125,7 @@ import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_CLIE
 import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_CLIENT_DHALGO;
 import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_LOG_FILE;
 import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_LOG_LEVEL;
+import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_MANAGEMENT_REST_TOKEN_AUTHENTICATION;
 import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_MANAGER;
 import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_PEER_AUTHENTICATOR;
 import static org.apache.geode.distributed.ConfigurationProperties.SECURITY_PEER_AUTH_INIT;
@@ -1217,6 +1218,9 @@ public abstract class AbstractDistributionConfig extends AbstractConfig
 
     m.put(SECURITY_PREFIX,
         "Prefix for security related properties which are packed together and invoked as authentication parameter. Neither key nor value can be NULL. Legal tags can be [security-username, security-digitalid] and Legal values can be any string data.");
+
+    m.put(SECURITY_MANAGEMENT_REST_TOKEN_AUTHENTICATION,
+        "When 'true' the REST service will attempt to authenticate request with a Bearer token passed in the 'Authentication' header of the REST request. Otherwise BASIC authentication scheme is used. This property is ignored if 'security-manager' is not set. Default value is 'false'.");
 
     m.put(USERDEFINED_PREFIX_NAME,
         "Prefix for user defined properties which are used for replacements in Cache.xml. Neither key nor value can be NULL. Legal tags can be [custom-any-string] and Legal values can be any string data.");

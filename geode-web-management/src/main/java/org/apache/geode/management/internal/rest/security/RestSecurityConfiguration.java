@@ -36,7 +36,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
@@ -51,9 +50,6 @@ import org.apache.geode.management.api.ClusterManagementResult;
 @ComponentScan("org.apache.geode.management.internal.rest")
 public class RestSecurityConfiguration extends WebSecurityConfigurerAdapter {
   private static Logger logger = LogService.getLogger();
-
-  // @Value("${auth.type}")
-  private String authType = "TOKEN";
 
   @Autowired
   private GeodeAuthenticationProvider authProvider;
@@ -73,9 +69,9 @@ public class RestSecurityConfiguration extends WebSecurityConfigurerAdapter {
   }
 
   @Bean
-  public ClientCredentialsTokenEndpointFilter tokenEndpointFilter() throws Exception {
-    ClientCredentialsTokenEndpointFilter tokenEndpointFilter =
-        new ClientCredentialsTokenEndpointFilter();
+  public JwtAuthenticationFilter tokenEndpointFilter() throws Exception {
+    JwtAuthenticationFilter tokenEndpointFilter =
+        new JwtAuthenticationFilter();
     tokenEndpointFilter.setFilterProcessesUrl("/experimental/**");
     tokenEndpointFilter.setAuthenticationManager(authenticationManagerBean());
     tokenEndpointFilter.setAuthenticationSuccessHandler((request, response, authentication) -> {
@@ -110,12 +106,13 @@ public class RestSecurityConfiguration extends WebSecurityConfigurerAdapter {
     logger.info("Security Service: " + this.authProvider.getSecurityService());
 
     if (this.authProvider.getSecurityService().isIntegratedSecurity()) {
-      logger.info("Security Service and authType: " + this.authProvider.getSecurityService() + " "
-          + authType);
-      if (authType.equals("BASIC")) {
-        http.httpBasic().authenticationEntryPoint(new CustomAuthenticationEntryPoint());
+      logger.info("Security Service and authType: " + this.authProvider.getSecurityService()
+          + " isRestManagmentTokenEnabled: "
+          + this.authProvider.getSecurityService().isRestManagementTokenEnabled());
+      if (this.authProvider.getSecurityService().isRestManagementTokenEnabled()) {
+        http.addFilterBefore(tokenEndpointFilter(), BasicAuthenticationFilter.class);
       } else {
-        http.addFilterAfter(tokenEndpointFilter(), BasicAuthenticationFilter.class);
+        http.httpBasic().authenticationEntryPoint(new CustomAuthenticationEntryPoint());
       }
     } else {
       http.authorizeRequests().anyRequest().permitAll();

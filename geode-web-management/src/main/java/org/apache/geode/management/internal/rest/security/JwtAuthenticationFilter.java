@@ -53,8 +53,6 @@ public class JwtAuthenticationFilter extends AbstractAuthenticationProcessingFil
     String authToken = header.substring(7);
 
     return new UsernamePasswordAuthenticationToken("tokenUser", authToken);
-    // JwtAuthenticationToken authRequest = new JwtAuthenticationToken(authToken);
-    // return getAuthenticationManager().authenticate(authRequest);
   }
 
   @Override

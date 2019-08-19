@@ -399,6 +399,11 @@ public class DistributionConfigImpl extends AbstractDistributionConfig implement
   private int securityPeerMembershipTimeout = DEFAULT_SECURITY_PEER_VERIFYMEMBER_TIMEOUT;
 
   /**
+   * enable security management using REST token
+   */
+  private boolean securityManagementRestTokenAuthentication;
+
+  /**
    * The member security credentials
    */
   private final Properties security = new Properties();
@@ -740,6 +745,8 @@ public class DistributionConfigImpl extends AbstractDistributionConfig implement
     securityPeerMembershipTimeout = other.getSecurityPeerMembershipTimeout();
     securityLogLevel = other.getSecurityLogLevel();
     securityLogFile = other.getSecurityLogFile();
+    securityManagementRestTokenAuthentication =
+        other.getSecurityManagementRestTokenAuthentication();
     security.putAll(other.getSecurityProps());
     removeUnresponsiveClient = other.getRemoveUnresponsiveClient();
     deltaPropagation = other.getDeltaPropagation();
@@ -2538,6 +2545,16 @@ public class DistributionConfigImpl extends AbstractDistributionConfig implement
   @Override
   public void setSecurity(String attName, String attValue) {
     security.setProperty(attName, attValue);
+  }
+
+  @Override
+  public void setSecurityManagementRestTokenAuthentication(boolean newValue) {
+    this.securityManagementRestTokenAuthentication = newValue;
+  }
+
+  @Override
+  public boolean getSecurityManagementRestTokenAuthentication() {
+    return this.securityManagementRestTokenAuthentication;
   }
 
   @Override

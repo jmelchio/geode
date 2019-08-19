@@ -68,6 +68,10 @@ public interface SecurityService {
 
   boolean isPeerSecurityRequired();
 
+  default boolean isRestManagementTokenEnabled() {
+    return false;
+  };
+
   SecurityManager getSecurityManager();
 
   PostProcessor getPostProcessor();
