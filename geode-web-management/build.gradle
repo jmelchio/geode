@@ -44,6 +44,8 @@ sourceSets {
 }
 
 dependencies {
+  compile(group: 'org.springframework.boot', name: 'spring-boot')
+
   compile(platform(project(':boms:geode-all-bom'))) {
     exclude module: "jackson-annotations"
   }
@@ -77,6 +79,7 @@ dependencies {
   }
 
   compile('org.springframework:spring-beans')
+  compile('org.springframework.boot:spring-boot-starter-web')
   compile('org.springframework.security:spring-security-core')
   compile('org.springframework.security:spring-security-web')
   compile('org.springframework.security:spring-security-config')
@@ -111,12 +114,14 @@ dependencies {
   commonTestCompile('org.springframework:spring-webmvc')
   commonTestCompile('org.springframework.security:spring-security-test')
   commonTestCompile(project(':geode-web-management'))
+  commonTestImplementation 'org.springframework.boot:spring-boot-starter-test'
 
   testCompile(project(':geode-junit')) {
     exclude module: 'geode-core'
   }
   testCompile(project(':geode-core'))
   testCompile('javax.servlet:javax.servlet-api')
+  testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
   integrationTestCompile(sourceSets.commonTest.output)
 
@@ -124,6 +129,8 @@ dependencies {
   integrationTestCompile('org.springframework:spring-test')
   integrationTestCompile('org.springframework:spring-webmvc')
   integrationTestCompile('org.springframework.security:spring-security-test')
+
+  integrationTestImplementation 'org.springframework.boot:spring-boot-starter-test'
 
   integrationTestCompile(project(':geode-junit')) {
     exclude module: 'geode-core'
@@ -149,9 +156,13 @@ dependencies {
     exclude module: 'geode-core'
   }
 
+  distributedTestImplementation 'org.springframework.boot:spring-boot-starter-test'
+
   distributedTestRuntimeOnly('org.apache.logging.log4j:log4j-slf4j-impl') {
     exclude module: 'slf4j-api'
   }
+
+//  providedCompile 'org.springframework.boot:spring-boot-starter-tomcat'
 }
 
 war {

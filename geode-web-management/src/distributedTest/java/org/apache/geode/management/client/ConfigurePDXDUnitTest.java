@@ -47,7 +47,7 @@ import org.apache.geode.test.dunit.rules.ClusterStartupRule;
 import org.apache.geode.test.dunit.rules.MemberVM;
 
 @RunWith(SpringRunner.class)
-@ContextConfiguration(locations = {"classpath*:WEB-INF/management-servlet.xml"},
+@ContextConfiguration(locations = {"classpath*:WEB-INF/formermanagement-servlet.txt"},
     loader = PlainLocatorContextLoader.class)
 @WebAppConfiguration
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
