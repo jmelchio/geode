@@ -30,6 +30,7 @@ import org.springframework.web.context.ServletContextAware;
 
 import org.apache.geode.cache.internal.HttpService;
 import org.apache.geode.internal.security.SecurityService;
+import org.apache.geode.internal.security.SecurityServiceFactory;
 import org.apache.geode.management.internal.security.ResourceConstants;
 import org.apache.geode.security.GemFireSecurityException;
 
@@ -82,9 +83,13 @@ public class GeodeAuthenticationProvider implements AuthenticationProvider, Serv
 
   @Override
   public void setServletContext(ServletContext servletContext) {
-    securityService = (SecurityService) servletContext
-        .getAttribute(HttpService.SECURITY_SERVICE_SERVLET_CONTEXT_PARAM);
-    authTokenEnabled =
-        (Boolean) servletContext.getAttribute(HttpService.AUTH_TOKEN_ENABLED_PARAM);
+    securityService = servletContext
+        .getAttribute(HttpService.SECURITY_SERVICE_SERVLET_CONTEXT_PARAM) != null
+            ? (SecurityService) servletContext
+                .getAttribute(HttpService.SECURITY_SERVICE_SERVLET_CONTEXT_PARAM)
+            : SecurityServiceFactory.create();
+    authTokenEnabled = servletContext
+        .getAttribute(HttpService.AUTH_TOKEN_ENABLED_PARAM) != null
+            ? (Boolean) servletContext.getAttribute(HttpService.AUTH_TOKEN_ENABLED_PARAM) : false;
   }
 }
