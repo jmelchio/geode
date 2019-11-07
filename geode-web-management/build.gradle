@@ -44,7 +44,7 @@ sourceSets {
 }
 
 dependencies {
-  compile(group: 'org.springframework.boot', name: 'spring-boot')
+  compile(group: 'org.springframework.boot', name: 'spring-boot-starter-web')
 
   compile(platform(project(':boms:geode-all-bom'))) {
     exclude module: "jackson-annotations"
@@ -79,7 +79,7 @@ dependencies {
   }
 
   compile('org.springframework:spring-beans')
-  compile('org.springframework.boot:spring-boot-starter-web')
+  compile('org.springframework.boot:spring-boot-starter-jetty')
   compile('org.springframework.security:spring-security-core')
   compile('org.springframework.security:spring-security-web')
   compile('org.springframework.security:spring-security-config')
@@ -162,7 +162,7 @@ dependencies {
     exclude module: 'slf4j-api'
   }
 
-//  providedCompile 'org.springframework.boot:spring-boot-starter-tomcat'
+//  providedCompile('org.springframework.boot:spring-boot-starter-jetty:1.5.20.RELEASE')
 }
 
 war {
