@@ -374,6 +374,12 @@
         <scope>compile</scope>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-annotations</artifactId>
+        <version>9.4.21.v20190926</version>
+        <scope>compile</scope>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.persistence</groupId>
         <artifactId>javax.persistence</artifactId>
         <version>2.2.1</version>

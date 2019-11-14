@@ -140,6 +140,7 @@ class DependencyConstraints implements Plugin<Project> {
                 api(group: 'org.codehaus.cargo', name: 'cargo-core-uberjar', version: '1.6.10')
                 api(group: 'org.eclipse.jetty', name: 'jetty-webapp', version: get('jetty.version'))
                 api(group: 'org.eclipse.jetty', name: 'jetty-server', version: get('jetty.version'))
+                api(group: 'org.eclipse.jetty', name: 'jetty-annotations', version: get('jetty.version'))
                 api(group: 'org.eclipse.persistence', name: 'javax.persistence', version: '2.2.1')
                 api(group: 'org.fusesource.jansi', name: 'jansi', version: '1.17.1')
                 api(group: 'org.httpunit', name: 'httpunit', version: '1.7.3')

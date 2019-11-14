@@ -28,6 +28,7 @@ dependencies {
   implementation('org.apache.logging.log4j:log4j-api')
   implementation('org.eclipse.jetty:jetty-webapp')
   implementation('org.eclipse.jetty:jetty-server')
+  implementation('org.eclipse.jetty:jetty-annotations')
 
   compileOnly(project(':geode-core'))
   compileOnly(project(':geode-common')) {

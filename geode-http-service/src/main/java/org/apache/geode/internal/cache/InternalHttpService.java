@@ -184,8 +184,6 @@ public class InternalHttpService implements HttpService {
     ccList.add("org.eclipse.jetty.webapp.WebXmlConfiguration");
     ccList.add("org.eclipse.jetty.webapp.MetaInfConfiguration");
     ccList.add("org.eclipse.jetty.webapp.FragmentConfiguration");
-    ccList.add("org.eclipse.jetty.plus.webapp.EnvConfiguration");
-    ccList.add("org.eclipse.jetty.plus.webapp.PlusConfiguration");
     ccList.add("org.eclipse.jetty.annotations.AnnotationConfiguration");
     ccList.add("org.eclipse.jetty.webapp.JettyWebXmlConfiguration");
     webapp.setConfigurationClasses(ccList);
