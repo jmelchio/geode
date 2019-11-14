@@ -254,7 +254,7 @@ class DependencyConstraints implements Plugin<Project> {
         dependencySet(group: 'org.springframework.boot', version: '1.5.20.RELEASE') {
             entry('spring-boot-starter-web')
             entry('spring-boot-starter-test')
-            entry('spring-boot-starter-tomcat')
+            entry('spring-boot-starter-jetty')
         }
 
         dependencySet(group: 'org.apache.tomcat.embed', version: '8.5.39') {
