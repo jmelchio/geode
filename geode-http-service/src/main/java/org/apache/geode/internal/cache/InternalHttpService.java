@@ -17,6 +17,7 @@ package org.apache.geode.internal.cache;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -178,6 +179,16 @@ public class InternalHttpService implements HttpService {
     }
 
     WebAppContext webapp = new WebAppContext();
+    List<String> ccList = new ArrayList<>();
+    ccList.add("org.eclipse.jetty.webapp.WebInfConfiguration");
+    ccList.add("org.eclipse.jetty.webapp.WebXmlConfiguration");
+    ccList.add("org.eclipse.jetty.webapp.MetaInfConfiguration");
+    ccList.add("org.eclipse.jetty.webapp.FragmentConfiguration");
+    ccList.add("org.eclipse.jetty.plus.webapp.EnvConfiguration");
+    ccList.add("org.eclipse.jetty.plus.webapp.PlusConfiguration");
+    ccList.add("org.eclipse.jetty.annotations.AnnotationConfiguration");
+    ccList.add("org.eclipse.jetty.webapp.JettyWebXmlConfiguration");
+    webapp.setConfigurationClasses(ccList);
     webapp.setContextPath(webAppContext);
     webapp.setWar(warFilePath.toString());
     webapp.setParentLoaderPriority(false);
@@ -189,9 +200,12 @@ public class InternalHttpService implements HttpService {
 
     webapp.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
     webapp.addAliasCheck(new AllowSymLinkAliasChecker());
+    String[] configClasses = webapp.getConfigurationClasses();
+    logger.info("Config classes size: {}", configClasses.length);
+    Arrays.stream(configClasses).forEach(cname -> logger.info("ClassName: {}", cname));
 
     if (attributeNameValuePairs != null) {
-      attributeNameValuePairs.forEach((key, value) -> webapp.setAttribute(key, value));
+      attributeNameValuePairs.forEach(webapp::setAttribute);
     }
 
     File tmpPath = new File(getWebAppBaseDirectory(webAppContext));
