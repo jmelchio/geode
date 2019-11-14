@@ -163,7 +163,7 @@ dependencies {
     exclude module: 'slf4j-api'
   }
 
-  providedCompile 'org.springframework.boot:spring-boot-starter-jetty:1.5.20.RELEASE'
+  providedCompile('org.springframework.boot:spring-boot-starter-jetty:1.5.20.RELEASE')
 }
 
 war {
