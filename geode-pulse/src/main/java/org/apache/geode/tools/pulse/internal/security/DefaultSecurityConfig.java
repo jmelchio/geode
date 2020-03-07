@@ -15,6 +15,8 @@
 
 package org.apache.geode.tools.pulse.internal.security;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,6 +34,14 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.AuthenticatedPrincipalOAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.web.authentication.ExceptionMappingAuthenticationFailureHandler;
 
 @Configuration
@@ -71,14 +81,17 @@ public class DefaultSecurityConfig extends WebSecurityConfigurerAdapter {
             "/images/**", "/css/**", "/properties/**")
         .permitAll()
         .mvcMatchers("/dataBrowser*", "/getQueryStatisticsGridModel*")
-        .access("hasRole('CLUSTER:READ') and hasRole('DATA:READ')")
+        .access(
+            "hasAnyRole('CLUSTER:READ', 'geode.cluster.read') and hasAnyRole('DATA:READ', 'geode.data.read')")
         .mvcMatchers("/*")
-        .hasRole("CLUSTER:READ")
-        .anyRequest().authenticated()).formLogin(form -> form
-            .loginPage("/login.html")
-            .loginProcessingUrl("/login")
-            .failureHandler(failureHandler)
-            .defaultSuccessUrl("/clusterDetail.html", true))
+        .hasAnyRole("CLUSTER:READ", "geode.cluster.read")
+        .anyRequest().authenticated())
+        // .formLogin(form -> form
+        // .loginPage("/login.html")
+        // .loginProcessingUrl("/login")
+        // .failureHandler(failureHandler)
+        // .defaultSuccessUrl("/clusterDetail.html", true))
+        .oauth2Login(withDefaults())
         .logout(logout -> logout
             .logoutUrl("/clusterLogout")
             .logoutSuccessHandler(logoutHandler))
@@ -101,5 +114,40 @@ public class DefaultSecurityConfig extends WebSecurityConfigurerAdapter {
         .withUser("admin")
         .password("admin")
         .roles("CLUSTER:READ", "DATA:READ");
+  }
+
+  @Bean
+  public ClientRegistrationRepository clientRegistrationRepository() {
+    return new InMemoryClientRegistrationRepository(this.uaaClientRegistration());
+  }
+
+  @Bean
+  public OAuth2AuthorizedClientService authorizedClientService(
+      ClientRegistrationRepository clientRegistrationRepository) {
+    return new InMemoryOAuth2AuthorizedClientService(clientRegistrationRepository);
+  }
+
+  @Bean
+  public OAuth2AuthorizedClientRepository authorizedClientRepository(
+      OAuth2AuthorizedClientService authorizedClientService) {
+    return new AuthenticatedPrincipalOAuth2AuthorizedClientRepository(authorizedClientService);
+  }
+
+  private ClientRegistration uaaClientRegistration() {
+    return ClientRegistration.withRegistrationId("uaa")
+        .clientId("pulse")
+        .clientSecret("pulsesecret")
+        // .clientAuthenticationMethod(ClientAuthenticationMethod.BASIC)
+        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+        .redirectUriTemplate("{baseUrl}/login/oauth2/code/{registrationId}")
+        .scope("openid", "geode.cluster.read", "geode.cluster.write", "geode.data.read",
+            "geode.data.write")
+        .authorizationUri("http://localhost:8080/uaa/oauth/authorize")
+        .tokenUri("http://localhost:8080/uaa/oauth/token")
+        .userInfoUri("http://localhost:8080/uaa/oauth/userinfo")
+        // .userNameAttributeName(IdTokenClaimNames.SUB)
+        // .jwkSetUri("http://localhost:8080/oauth2/v3/certs")
+        .clientName("Pulse")
+        .build();
   }
 }
