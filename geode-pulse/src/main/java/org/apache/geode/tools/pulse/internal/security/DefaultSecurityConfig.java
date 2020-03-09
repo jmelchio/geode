@@ -137,16 +137,13 @@ public class DefaultSecurityConfig extends WebSecurityConfigurerAdapter {
     return ClientRegistration.withRegistrationId("uaa")
         .clientId("pulse")
         .clientSecret("pulsesecret")
-        // .clientAuthenticationMethod(ClientAuthenticationMethod.BASIC)
         .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
         .redirectUriTemplate("{baseUrl}/login/oauth2/code/{registrationId}")
-        .scope("openid", "geode.cluster.read", "geode.cluster.write", "geode.data.read",
-            "geode.data.write")
+        .scope("openid", "CLUSTER:READ", "CLUSTER:WRITE", "DATA:READ", "DATA:WRITE")
         .authorizationUri("http://localhost:8080/uaa/oauth/authorize")
         .tokenUri("http://localhost:8080/uaa/oauth/token")
-        .userInfoUri("http://localhost:8080/uaa/oauth/userinfo")
-        // .userNameAttributeName(IdTokenClaimNames.SUB)
-        // .jwkSetUri("http://localhost:8080/oauth2/v3/certs")
+        .userInfoUri("http://localhost:8080/uaa/userinfo")
+        .jwkSetUri("http://localhost:8080/uaa/token_keys")
         .clientName("Pulse")
         .build();
   }
