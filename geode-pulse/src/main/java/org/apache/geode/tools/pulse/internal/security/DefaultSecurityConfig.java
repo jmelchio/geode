@@ -80,11 +80,11 @@ public class DefaultSecurityConfig extends WebSecurityConfigurerAdapter {
         .mvcMatchers("/login.html", "/authenticateUser", "/pulseVersion", "/scripts/**",
             "/images/**", "/css/**", "/properties/**")
         .permitAll()
-        .mvcMatchers("/dataBrowser*", "/getQueryStatisticsGridModel*")
-        .access(
-            "hasAnyRole('CLUSTER:READ', 'geode.cluster.read') and hasAnyRole('DATA:READ', 'geode.data.read')")
-        .mvcMatchers("/*")
-        .hasAnyRole("CLUSTER:READ", "geode.cluster.read")
+        // .mvcMatchers("/dataBrowser*", "/getQueryStatisticsGridModel*")
+        // .access(
+        // "hasRole('CLUSTER:READ') and hasRole('DATA:READ')")
+        // .mvcMatchers("/*")
+        // .hasRole("CLUSTER:READ")
         .anyRequest().authenticated())
         // .formLogin(form -> form
         // .loginPage("/login.html")
@@ -145,6 +145,7 @@ public class DefaultSecurityConfig extends WebSecurityConfigurerAdapter {
         .userInfoUri("http://localhost:8080/uaa/userinfo")
         .jwkSetUri("http://localhost:8080/uaa/token_keys")
         .clientName("Pulse")
+        .userNameAttributeName("user_name")
         .build();
   }
 }
