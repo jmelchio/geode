@@ -74,7 +74,8 @@ import org.apache.geode.tools.pulse.internal.data.JmxManagerFinder.JmxManagerInf
 public class JMXDataUpdater implements IClusterUpdater, NotificationListener {
 
   private static final Logger logger = LogManager.getLogger();
-  private final ResourceBundle resourceBundle = Repository.get().getResourceBundle();
+  private final ResourceBundle resourceBundle;
+  private final Repository repository;
 
   private JMXConnector conn = null;
   private MBeanServerConnection mbs = null;
@@ -99,10 +100,13 @@ public class JMXDataUpdater implements IClusterUpdater, NotificationListener {
   /**
    * constructor used for creating JMX connection
    */
-  public JMXDataUpdater(String server, String port, Cluster cluster) {
+  public JMXDataUpdater(String server, String port, Cluster cluster, ResourceBundle resourceBundle,
+      Repository repository) {
     serverName = server;
     this.port = port;
     this.cluster = cluster;
+    this.resourceBundle = resourceBundle;
+    this.repository = repository;
 
     try {
       // Initialize MBean object names
@@ -169,8 +173,6 @@ public class JMXDataUpdater implements IClusterUpdater, NotificationListener {
    */
   @Override
   public JMXConnector connect(Object credentials) {
-    // Reference to repository
-    Repository repository = Repository.get();
     try {
 
       String jmxSerURL = "";

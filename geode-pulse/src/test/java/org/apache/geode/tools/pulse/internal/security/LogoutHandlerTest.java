@@ -81,9 +81,8 @@ public class LogoutHandlerTest {
     Cluster cluster = Mockito.spy(Cluster.class);
     repository = Mockito.spy(Repository.class);
     spy(Repository.class);
-    when(Repository.class, "get").thenReturn(repository);
     doReturn(cluster).when(repository).getCluster();
-    handler = new LogoutHandler("/defaultTargetUrl");
+    handler = new LogoutHandler("/defaultTargetUrl", repository);
   }
 
   @Test

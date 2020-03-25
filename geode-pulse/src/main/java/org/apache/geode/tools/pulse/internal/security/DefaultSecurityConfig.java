@@ -34,14 +34,21 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.ExceptionMappingAuthenticationFailureHandler;
 
+import org.apache.geode.tools.pulse.internal.data.Repository;
+
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @Profile("pulse.authentication.default")
 public class DefaultSecurityConfig extends WebSecurityConfigurerAdapter {
   @Bean
-  public LogoutHandler logoutHandler() {
-    return new LogoutHandler("/login.html");
+  public Repository repository() {
+    return new Repository();
+  }
+
+  @Bean
+  public String defaultTargetURL() {
+    return new String("/login.html");
   }
 
   @Bean

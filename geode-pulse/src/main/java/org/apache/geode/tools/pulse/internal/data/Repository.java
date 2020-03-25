@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.ResourceBundle;
 
@@ -28,8 +29,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 
 /**
  * A Singleton instance of the memory cache for clusters.
@@ -39,7 +41,7 @@ import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 public class Repository {
   private static final Logger logger = LogManager.getLogger();
 
-  private static Repository instance = new Repository();
+  private final OAuth2AuthorizedClientService authorizedClientService;
   private final HashMap<String, Cluster> clusterMap = new HashMap<>();
   private Boolean jmxUseLocator;
   private String host;
@@ -56,12 +58,12 @@ public class Repository {
 
   private PulseConfig pulseConfig = new PulseConfig();
 
-  private Repository() {
+  public Repository() {
+    this(null);
+  };
 
-  }
-
-  public static Repository get() {
-    return instance;
+  public Repository(OAuth2AuthorizedClientService authorizedClientService) {
+    this.authorizedClientService = authorizedClientService;
   }
 
   public Boolean getJmxUseLocator() {
@@ -69,6 +71,7 @@ public class Repository {
   }
 
   public void setJmxUseLocator(Boolean jmxUseLocator) {
+    Objects.requireNonNull(jmxUseLocator, "jmxUseLocat == null");
     this.jmxUseLocator = jmxUseLocator;
   }
 
@@ -130,15 +133,19 @@ public class Repository {
 
     if (auth instanceof OAuth2AuthenticationToken) {
       OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) auth;
+      OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(
+          token.getAuthorizedClientRegistrationId(),
+          token.getName());
+
       return getClusterWithCredentials(token.getPrincipal().getName(),
-          ((DefaultOidcUser) token.getPrincipal()).getIdToken().getTokenValue());
+          client.getAccessToken().getTokenValue());
     }
 
-    return getClusterWithUserNameAndPassword(auth.getName(), auth.getCredentials().toString());
+    return getClusterWithUserNameAndPassword(auth.getName(), null);
   }
 
   public Cluster getClusterWithUserNameAndPassword(String userName, String password) {
-    return getClusterWithCredentials(userName, new String[]{userName, password});
+    return getClusterWithCredentials(userName, new String[] {userName, password});
   }
 
   public Cluster getClusterWithCredentials(String username, Object credentials) {
@@ -146,9 +153,9 @@ public class Repository {
       Cluster data = clusterMap.get(username);
       if (data == null) {
         logger.info(resourceBundle.getString("LOG_MSG_CREATE_NEW_THREAD") + " : " + username);
-        data = new Cluster(this.host, this.port, username);
+        data = new Cluster(host, port, username, resourceBundle, this);
         // Assign name to thread created
-        data.setName(PulseConstants.APP_NAME + "-" + this.host + ":" + this.port + ":" + username);
+        data.setName(PulseConstants.APP_NAME + "-" + host + ":" + port + ":" + username);
         data.connectToGemFire(credentials);
         if (data.isConnectedFlag()) {
           this.clusterMap.put(username, data);

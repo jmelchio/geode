@@ -22,9 +22,14 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
+import org.springframework.stereotype.Component;
 
 import org.apache.geode.tools.pulse.internal.data.Repository;
 
@@ -32,9 +37,13 @@ import org.apache.geode.tools.pulse.internal.data.Repository;
  * Handler is used to close jmx connection maintained at user-level
  *
  */
-public class LogoutHandler extends SimpleUrlLogoutSuccessHandler implements LogoutSuccessHandler {
+@Component
+public class LogoutHandler extends SimpleUrlLogoutSuccessHandler implements LogoutSuccessHandler,
+    ApplicationContextAware {
   private static final Logger logger = LogManager.getLogger();
+  private ApplicationContext applicationContext;
 
+  @Autowired
   public LogoutHandler(String defaultTargetURL) {
     this.setDefaultTargetUrl(defaultTargetURL);
   }
@@ -44,10 +53,16 @@ public class LogoutHandler extends SimpleUrlLogoutSuccessHandler implements Logo
       Authentication authentication) throws IOException, ServletException {
 
     if (authentication != null) {
-      Repository.get().logoutUser(authentication.getName());
+      Repository repository = applicationContext.getBean("repository", Repository.class);
+      repository.logoutUser(authentication.getName());
       logger.info("#LogoutHandler: GemFireAuthentication JMX Connection Closed.");
     }
 
     super.onLogoutSuccess(request, response, authentication);
+  }
+
+  @Override
+  public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+    this.applicationContext = applicationContext;
   }
 }

@@ -22,7 +22,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.spy;
-import static org.powermock.api.mockito.PowerMockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -59,7 +58,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import org.apache.geode.test.junit.categories.PulseTest;
-import org.apache.geode.tools.pulse.internal.controllers.PulseController;
 import org.apache.geode.tools.pulse.internal.data.Cluster;
 import org.apache.geode.tools.pulse.internal.data.PulseConfig;
 import org.apache.geode.tools.pulse.internal.data.Repository;
@@ -214,7 +212,6 @@ public class PulseControllerJUnitTest {
 
     // Set up a partial mock for some static methods
     spy(Repository.class);
-    when(Repository.class, "get").thenReturn(repo);
     doReturn(cluster).when(repo).getCluster();
 
     PulseConfig config = new PulseConfig();
@@ -222,12 +219,12 @@ public class PulseControllerJUnitTest {
     config.setQueryHistoryFileName(tempQueryLog.toString());
     doReturn(config).when(repo).getPulseConfig();
 
-    PulseController.pulseVersion.setPulseVersion("not empty");
-    PulseController.pulseVersion.setPulseBuildId("not empty");
-    PulseController.pulseVersion.setPulseBuildDate("not empty");
-    PulseController.pulseVersion.setPulseSourceDate("not empty");
-    PulseController.pulseVersion.setPulseSourceRevision("not empty");
-    PulseController.pulseVersion.setPulseSourceRepository("not empty");
+    // PulseController.pulseVersion.setPulseVersion("not empty");
+    // PulseController.pulseVersion.setPulseBuildId("not empty");
+    // PulseController.pulseVersion.setPulseBuildDate("not empty");
+    // PulseController.pulseVersion.setPulseSourceDate("not empty");
+    // PulseController.pulseVersion.setPulseSourceRevision("not empty");
+    // PulseController.pulseVersion.setPulseSourceRepository("not empty");
   }
 
   @Test

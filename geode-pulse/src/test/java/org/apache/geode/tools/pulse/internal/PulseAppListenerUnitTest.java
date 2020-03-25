@@ -40,6 +40,8 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
+import org.apache.geode.tools.pulse.internal.controllers.PulseController;
+import org.apache.geode.tools.pulse.internal.data.PulseVersion;
 import org.apache.geode.tools.pulse.internal.data.Repository;
 
 public class PulseAppListenerUnitTest {
@@ -59,13 +61,18 @@ public class PulseAppListenerUnitTest {
   private Repository repository;
 
   @Mock
+  private PulseController pulseController;
+
+  @Mock
   private BiFunction<String, ResourceBundle, Properties> loadProperties;
 
   private ResourceBundle resourceBundle;
+  private PulseVersion pulseVersion;
 
   @Before
   public void setUp() {
     when(loadProperties.apply(eq("GemFireVersion.properties"), any())).thenReturn(new Properties());
+    pulseVersion = new PulseVersion(repository);
   }
 
   @Test
@@ -74,8 +81,11 @@ public class PulseAppListenerUnitTest {
 
     when(contextEvent.getServletContext()).thenReturn(servletContext);
     when(repository.getResourceBundle()).thenReturn(resourceBundle);
+    when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
 
-    subject = new PulseAppListener(true, repository, loadProperties);
+    subject = new PulseAppListener(true, loadProperties);
+    subject.setRepository(repository);
+    subject.setPulseController(pulseController);
 
     subject.contextInitialized(contextEvent);
 
@@ -91,8 +101,11 @@ public class PulseAppListenerUnitTest {
     when(contextEvent.getServletContext()).thenReturn(servletContext);
     when(repository.getResourceBundle()).thenReturn(resourceBundle);
     when(servletContext.getAttribute("org.apache.geode.sslConfig")).thenReturn(sslProperties);
+    when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
 
-    subject = new PulseAppListener(true, repository, loadProperties);
+    subject = new PulseAppListener(true, loadProperties);
+    subject.setRepository(repository);
+    subject.setPulseController(pulseController);
 
     subject.contextInitialized(contextEvent);
 
@@ -105,8 +118,11 @@ public class PulseAppListenerUnitTest {
 
     when(repository.getResourceBundle()).thenReturn(resourceBundle);
     when(loadProperties.apply(anyString(), any())).thenReturn(new Properties());
+    when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
 
-    subject = new PulseAppListener(false, repository, loadProperties);
+    subject = new PulseAppListener(true, loadProperties);
+    subject.setRepository(repository);
+    subject.setPulseController(pulseController);
 
     subject.contextInitialized(contextEvent);
 
@@ -123,8 +139,11 @@ public class PulseAppListenerUnitTest {
     when(repository.getResourceBundle()).thenReturn(resourceBundle);
     when(loadProperties.apply(eq("pulse.properties"), any())).thenReturn(new Properties());
     when(loadProperties.apply(eq("pulsesecurity.properties"), any())).thenReturn(sslProperties);
+    when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
 
-    subject = new PulseAppListener(false, repository, loadProperties);
+    subject = new PulseAppListener(true, loadProperties);
+    subject.setRepository(repository);
+    subject.setPulseController(pulseController);
 
     subject.contextInitialized(contextEvent);
 

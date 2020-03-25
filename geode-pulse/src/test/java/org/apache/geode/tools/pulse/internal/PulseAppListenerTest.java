@@ -31,7 +31,9 @@ import org.junit.Test;
 import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 import org.junit.rules.TestRule;
 
+import org.apache.geode.tools.pulse.internal.controllers.PulseController;
 import org.apache.geode.tools.pulse.internal.data.PulseConstants;
+import org.apache.geode.tools.pulse.internal.data.PulseVersion;
 import org.apache.geode.tools.pulse.internal.data.Repository;
 
 public class PulseAppListenerTest {
@@ -47,13 +49,18 @@ public class PulseAppListenerTest {
   public void setUp() {
     System.setProperty(PulseConstants.SYSTEM_PROPERTY_PULSE_EMBEDDED, "true");
 
-    repository = Repository.get();
+    PulseController pulseController = mock(PulseController.class);
+    repository = new Repository();
     appListener = new PulseAppListener();
+    appListener.setPulseController(pulseController);
+    appListener.setRepository(repository);
+    PulseVersion pulseVersion = new PulseVersion(repository);
 
     contextEvent = mock(ServletContextEvent.class);
     ServletContext context = mock(ServletContext.class);
     when(context.getAttribute(anyString())).thenReturn(null);
     when(contextEvent.getServletContext()).thenReturn(context);
+    when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
   }
 
   @Test

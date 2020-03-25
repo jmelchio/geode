@@ -35,6 +35,8 @@ import org.springframework.security.oauth2.client.web.AuthenticatedPrincipalOAut
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 
+import org.apache.geode.tools.pulse.internal.data.Repository;
+
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
@@ -57,6 +59,11 @@ public class OAuthSecurityConfig extends WebSecurityConfigurerAdapter {
   private String jwkSetUri;
   @Value("${pulse.oauth.userNameAttributeName}")
   private String userNameAttributeName;
+
+  @Bean
+  public Repository repository(OAuth2AuthorizedClientService authorizedClientService) {
+    return new Repository(authorizedClientService);
+  }
 
   @Override
   protected void configure(HttpSecurity http) throws Exception {
@@ -98,7 +105,6 @@ public class OAuthSecurityConfig extends WebSecurityConfigurerAdapter {
         .clientSecret(clientSecret)
         .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
         .redirectUriTemplate("{baseUrl}/login/oauth2/code/{registrationId}")
-        .scope("openid", "CLUSTER:READ", "CLUSTER:WRITE", "DATA:READ", "DATA:WRITE")
         .authorizationUri(authorizationUri)
         .tokenUri(tokenUri)
         .userInfoUri(userInfoUri)

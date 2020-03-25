@@ -27,9 +27,12 @@ import java.util.function.BiFunction;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
+import javax.servlet.annotation.WebListener;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import org.apache.geode.tools.pulse.internal.controllers.PulseController;
 import org.apache.geode.tools.pulse.internal.data.PulseConstants;
@@ -41,27 +44,38 @@ import org.apache.geode.tools.pulse.internal.data.Repository;
  * @since GemFire version 7.0.Beta 2012-09-23
  *
  */
-// @WebListener
+@WebListener
 public class PulseAppListener implements ServletContextListener {
   private static final Logger logger = LogManager.getLogger();
   private static final String GEODE_SSLCONFIG_SERVLET_CONTEXT_PARAM = "org.apache.geode.sslConfig";
 
   private final boolean isEmbedded;
-  private final Repository repository;
-  private final ResourceBundle resourceBundle;
+  private Repository repository;
+  private ResourceBundle resourceBundle;
   private final BiFunction<String, ResourceBundle, Properties> propertiesFileLoader;
+  private PulseController pulseController;
 
   public PulseAppListener() {
-    this(Boolean.getBoolean(PulseConstants.SYSTEM_PROPERTY_PULSE_EMBEDDED), Repository.get(),
+    this(Boolean.getBoolean(PulseConstants.SYSTEM_PROPERTY_PULSE_EMBEDDED),
         PulseAppListener::loadPropertiesFromFile);
   }
 
-  public PulseAppListener(boolean isEmbedded, Repository repository,
+  public PulseAppListener(boolean isEmbedded,
       BiFunction<String, ResourceBundle, Properties> propertiesFileLoader) {
     this.isEmbedded = isEmbedded;
+    this.propertiesFileLoader = propertiesFileLoader;
+  }
+
+  @Autowired
+  public void setPulseController(
+      PulseController pulseController) {
+    this.pulseController = pulseController;
+  }
+
+  @Autowired
+  public void setRepository(Repository repository) {
     this.repository = repository;
     this.resourceBundle = repository.getResourceBundle();
-    this.propertiesFileLoader = propertiesFileLoader;
   }
 
   @Override
@@ -94,9 +108,11 @@ public class PulseAppListener implements ServletContextListener {
           PulseConstants.GEMFIRE_DEFAULT_PORT));
 
       repository.setUseSSLManager(
-          Boolean.valueOf(System.getProperty(PulseConstants.SYSTEM_PROPERTY_PULSE_USESSL_MANAGER)));
+          Boolean.parseBoolean(
+              System.getProperty(PulseConstants.SYSTEM_PROPERTY_PULSE_USESSL_MANAGER)));
       repository.setUseSSLLocator(
-          Boolean.valueOf(System.getProperty(PulseConstants.SYSTEM_PROPERTY_PULSE_USESSL_LOCATOR)));
+          Boolean.parseBoolean(
+              System.getProperty(PulseConstants.SYSTEM_PROPERTY_PULSE_USESSL_LOCATOR)));
 
       Object sslProperties =
           event.getServletContext().getAttribute(GEODE_SSLCONFIG_SERVLET_CONTEXT_PARAM);
@@ -119,9 +135,9 @@ public class PulseAppListener implements ServletContextListener {
           PulseConstants.GEMFIRE_DEFAULT_PORT));
 
       // SSL
-      repository.setUseSSLManager(Boolean.valueOf(pulseProperties
+      repository.setUseSSLManager(Boolean.parseBoolean(pulseProperties
           .getProperty(PulseConstants.SYSTEM_PROPERTY_PULSE_USESSL_MANAGER, "false")));
-      repository.setUseSSLLocator(Boolean.valueOf(pulseProperties
+      repository.setUseSSLLocator(Boolean.parseBoolean(pulseProperties
           .getProperty(PulseConstants.SYSTEM_PROPERTY_PULSE_USESSL_LOCATOR, "false")));
 
       // load pulse security properties
@@ -149,19 +165,19 @@ public class PulseAppListener implements ServletContextListener {
     Properties properties =
         propertiesFileLoader.apply(PulseConstants.PULSE_VERSION_PROPERTIES_FILE, resourceBundle);
     // Set pulse version details in common object
-    PulseController.pulseVersion
+    pulseController.getPulseVersion()
         .setPulseVersion(properties.getProperty(PulseConstants.PROPERTY_PULSE_VERSION, ""));
-    PulseController.pulseVersion
+    pulseController.getPulseVersion()
         .setPulseBuildId(properties.getProperty(PulseConstants.PROPERTY_BUILD_ID, ""));
-    PulseController.pulseVersion
+    pulseController.getPulseVersion()
         .setPulseBuildDate(properties.getProperty(PulseConstants.PROPERTY_BUILD_DATE, ""));
-    PulseController.pulseVersion
+    pulseController.getPulseVersion()
         .setPulseSourceDate(properties.getProperty(PulseConstants.PROPERTY_SOURCE_DATE, ""));
-    PulseController.pulseVersion.setPulseSourceRevision(
+    pulseController.getPulseVersion().setPulseSourceRevision(
         properties.getProperty(PulseConstants.PROPERTY_SOURCE_REVISION, ""));
-    PulseController.pulseVersion.setPulseSourceRepository(
+    pulseController.getPulseVersion().setPulseSourceRepository(
         properties.getProperty(PulseConstants.PROPERTY_SOURCE_REPOSITORY, ""));
-    logger.info(PulseController.pulseVersion.getPulseVersionLogMessage());
+    logger.info(pulseController.getPulseVersion().getPulseVersionLogMessage());
   }
 
   // Function to load pulse properties from pulse.properties file

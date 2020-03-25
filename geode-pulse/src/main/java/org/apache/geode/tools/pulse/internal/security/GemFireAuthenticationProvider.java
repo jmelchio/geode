@@ -20,6 +20,9 @@ import javax.management.remote.JMXConnector;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -36,9 +39,11 @@ import org.apache.geode.tools.pulse.internal.data.Repository;
  *
  * @since GemFire version 9.0
  */
-public class GemFireAuthenticationProvider implements AuthenticationProvider {
+public class GemFireAuthenticationProvider implements AuthenticationProvider,
+    ApplicationContextAware {
 
   private static final Logger logger = LogManager.getLogger();
+  private ApplicationContext applicationContext;
 
   public GemFireAuthenticationProvider() {}
 
@@ -54,7 +59,9 @@ public class GemFireAuthenticationProvider implements AuthenticationProvider {
     String password = authentication.getCredentials().toString();
 
     logger.debug("Connecting to GemFire with user=" + name);
-    JMXConnector jmxc = Repository.get().getClusterWithUserNameAndPassword(name, password).getJMXConnector();
+    Repository repository = applicationContext.getBean("repository", Repository.class);
+    JMXConnector jmxc =
+        repository.getClusterWithUserNameAndPassword(name, password).getJMXConnector();
     if (jmxc == null) {
       throw new BadCredentialsException("Error connecting to GemFire JMX Server");
     }
@@ -71,4 +78,8 @@ public class GemFireAuthenticationProvider implements AuthenticationProvider {
     return authentication.equals(UsernamePasswordAuthenticationToken.class);
   }
 
+  @Override
+  public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+    this.applicationContext = applicationContext;
+  }
 }
