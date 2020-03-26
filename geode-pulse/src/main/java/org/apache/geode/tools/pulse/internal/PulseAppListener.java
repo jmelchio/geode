@@ -32,7 +32,6 @@ import javax.servlet.annotation.WebListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import org.apache.geode.tools.pulse.internal.controllers.PulseController;
 import org.apache.geode.tools.pulse.internal.data.PulseConstants;
