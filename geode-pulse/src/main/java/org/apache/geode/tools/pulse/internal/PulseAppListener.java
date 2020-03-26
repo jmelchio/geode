@@ -32,6 +32,7 @@ import javax.servlet.annotation.WebListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import org.apache.geode.tools.pulse.internal.controllers.PulseController;
 import org.apache.geode.tools.pulse.internal.data.PulseConstants;
@@ -44,35 +45,30 @@ import org.apache.geode.tools.pulse.internal.data.Repository;
  *
  */
 @WebListener
+@Component
 public class PulseAppListener implements ServletContextListener {
   private static final Logger logger = LogManager.getLogger();
   private static final String GEODE_SSLCONFIG_SERVLET_CONTEXT_PARAM = "org.apache.geode.sslConfig";
 
   private final boolean isEmbedded;
-  private Repository repository;
-  private ResourceBundle resourceBundle;
+  private final Repository repository;
+  private final ResourceBundle resourceBundle;
   private final BiFunction<String, ResourceBundle, Properties> propertiesFileLoader;
-  private PulseController pulseController;
+  private final PulseController pulseController;
 
-  public PulseAppListener() {
+  @Autowired
+  public PulseAppListener(PulseController pulseController, Repository repository) {
     this(Boolean.getBoolean(PulseConstants.SYSTEM_PROPERTY_PULSE_EMBEDDED),
-        PulseAppListener::loadPropertiesFromFile);
+        PulseAppListener::loadPropertiesFromFile, pulseController, repository);
   }
 
   public PulseAppListener(boolean isEmbedded,
-      BiFunction<String, ResourceBundle, Properties> propertiesFileLoader) {
+      BiFunction<String, ResourceBundle, Properties> propertiesFileLoader,
+      PulseController pulseController,
+      Repository repository) {
     this.isEmbedded = isEmbedded;
     this.propertiesFileLoader = propertiesFileLoader;
-  }
-
-  @Autowired
-  public void setPulseController(
-      PulseController pulseController) {
     this.pulseController = pulseController;
-  }
-
-  @Autowired
-  public void setRepository(Repository repository) {
     this.repository = repository;
     this.resourceBundle = repository.getResourceBundle();
   }

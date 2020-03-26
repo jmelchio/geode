@@ -83,7 +83,7 @@ public class PulseAppListenerUnitTest {
     when(repository.getResourceBundle()).thenReturn(resourceBundle);
     when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
 
-    subject = new PulseAppListener(true, loadProperties);
+    subject = new PulseAppListener(true, loadProperties, pulseController, repository);
     subject.setRepository(repository);
     subject.setPulseController(pulseController);
 
@@ -103,7 +103,7 @@ public class PulseAppListenerUnitTest {
     when(servletContext.getAttribute("org.apache.geode.sslConfig")).thenReturn(sslProperties);
     when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
 
-    subject = new PulseAppListener(true, loadProperties);
+    subject = new PulseAppListener(true, loadProperties, pulseController, repository);
     subject.setRepository(repository);
     subject.setPulseController(pulseController);
 
@@ -120,7 +120,7 @@ public class PulseAppListenerUnitTest {
     when(loadProperties.apply(anyString(), any())).thenReturn(new Properties());
     when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
 
-    subject = new PulseAppListener(true, loadProperties);
+    subject = new PulseAppListener(true, loadProperties, pulseController, repository);
     subject.setRepository(repository);
     subject.setPulseController(pulseController);
 
@@ -141,7 +141,7 @@ public class PulseAppListenerUnitTest {
     when(loadProperties.apply(eq("pulsesecurity.properties"), any())).thenReturn(sslProperties);
     when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
 
-    subject = new PulseAppListener(true, loadProperties);
+    subject = new PulseAppListener(true, loadProperties, pulseController, repository);
     subject.setRepository(repository);
     subject.setPulseController(pulseController);
 
