@@ -30,6 +30,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 import org.junit.rules.TestRule;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.web.context.WebApplicationContext;
 
 import org.apache.geode.tools.pulse.internal.controllers.PulseController;
 import org.apache.geode.tools.pulse.internal.data.PulseConstants;
@@ -43,24 +46,26 @@ public class PulseAppListenerTest {
   @Rule
   public final TestRule restoreSystemProperties = new RestoreSystemProperties();
 
-  ServletContextEvent contextEvent;
+  ContextRefreshedEvent contextEvent;
 
   @Before
   public void setUp() {
     System.setProperty(PulseConstants.SYSTEM_PROPERTY_PULSE_EMBEDDED, "true");
 
-    PulseController pulseController = mock(PulseController.class);
     repository = new Repository();
-    appListener = new PulseAppListener();
-    appListener.setPulseController(pulseController);
-    appListener.setRepository(repository);
-    PulseVersion pulseVersion = new PulseVersion(repository);
 
-    contextEvent = mock(ServletContextEvent.class);
-    ServletContext context = mock(ServletContext.class);
-    when(context.getAttribute(anyString())).thenReturn(null);
-    when(contextEvent.getServletContext()).thenReturn(context);
+    PulseController pulseController = mock(PulseController.class);
+    appListener = new PulseAppListener(pulseController, repository);
+    PulseVersion pulseVersion = new PulseVersion(repository);
     when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
+
+    contextEvent = mock(ContextRefreshedEvent.class);
+    WebApplicationContext applicationContext = mock(WebApplicationContext.class);
+    when(contextEvent.getApplicationContext()).thenReturn(applicationContext);
+    
+    ServletContext servletContext = mock(ServletContext.class);
+    when(servletContext.getAttribute(anyString())).thenReturn(null);
+    when(applicationContext.getServletContext()).thenReturn(servletContext);
   }
 
   @Test
