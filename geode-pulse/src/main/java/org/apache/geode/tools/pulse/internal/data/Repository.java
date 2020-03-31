@@ -60,7 +60,7 @@ public class Repository {
 
   public Repository() {
     this(null);
-  };
+  }
 
   public Repository(OAuth2AuthorizedClientService authorizedClientService) {
     this.authorizedClientService = authorizedClientService;

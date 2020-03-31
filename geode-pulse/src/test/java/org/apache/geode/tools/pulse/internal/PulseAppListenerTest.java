@@ -21,7 +21,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -30,7 +29,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 import org.junit.rules.TestRule;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -62,7 +60,7 @@ public class PulseAppListenerTest {
     contextEvent = mock(ContextRefreshedEvent.class);
     WebApplicationContext applicationContext = mock(WebApplicationContext.class);
     when(contextEvent.getApplicationContext()).thenReturn(applicationContext);
-    
+
     ServletContext servletContext = mock(ServletContext.class);
     when(servletContext.getAttribute(anyString())).thenReturn(null);
     when(applicationContext.getServletContext()).thenReturn(servletContext);

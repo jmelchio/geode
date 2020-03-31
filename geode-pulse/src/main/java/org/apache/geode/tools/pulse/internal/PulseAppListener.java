@@ -77,7 +77,7 @@ public class PulseAppListener implements ApplicationListener<ApplicationEvent> {
 
   @Override
   public void onApplicationEvent(ApplicationEvent event) {
-    if(event instanceof ContextRefreshedEvent) {
+    if (event instanceof ContextRefreshedEvent) {
       contextInitialized((ContextRefreshedEvent) event);
     } else if (event instanceof ContextClosedEvent) {
       contextDestroyed((ContextClosedEvent) event);

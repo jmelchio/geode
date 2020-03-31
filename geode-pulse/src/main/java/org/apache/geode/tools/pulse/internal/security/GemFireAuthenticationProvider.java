@@ -20,9 +20,6 @@ import javax.management.remote.JMXConnector;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -39,13 +36,14 @@ import org.apache.geode.tools.pulse.internal.data.Repository;
  *
  * @since GemFire version 9.0
  */
-public class GemFireAuthenticationProvider implements AuthenticationProvider,
-    ApplicationContextAware {
+public class GemFireAuthenticationProvider implements AuthenticationProvider {
 
   private static final Logger logger = LogManager.getLogger();
-  private ApplicationContext applicationContext;
+  private final Repository repository;
 
-  public GemFireAuthenticationProvider() {}
+  public GemFireAuthenticationProvider(Repository repository) {
+    this.repository = repository;
+  }
 
   @Override
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -59,7 +57,6 @@ public class GemFireAuthenticationProvider implements AuthenticationProvider,
     String password = authentication.getCredentials().toString();
 
     logger.debug("Connecting to GemFire with user=" + name);
-    Repository repository = applicationContext.getBean("repository", Repository.class);
     JMXConnector jmxc =
         repository.getClusterWithUserNameAndPassword(name, password).getJMXConnector();
     if (jmxc == null) {
@@ -76,10 +73,5 @@ public class GemFireAuthenticationProvider implements AuthenticationProvider,
   @Override
   public boolean supports(Class<?> authentication) {
     return authentication.equals(UsernamePasswordAuthenticationToken.class);
-  }
-
-  @Override
-  public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-    this.applicationContext = applicationContext;
   }
 }
