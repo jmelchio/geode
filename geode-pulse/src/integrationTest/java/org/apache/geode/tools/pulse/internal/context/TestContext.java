@@ -19,7 +19,14 @@
 
 package org.apache.geode.tools.pulse.internal.context;
 
-import static org.mockito.Mockito.spy;
+import static java.util.Collections.enumeration;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.ResourceBundle;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,6 +42,26 @@ public class TestContext {
   @Bean
   @Primary
   public Repository repository() {
-    return spy(Repository.class);
+    Repository repository = mock(Repository.class);
+    ResourceBundle resourceBundle = getResourceBundle();
+    when(repository.getResourceBundle()).thenReturn(resourceBundle);
+    return repository;
+  }
+
+  private ResourceBundle getResourceBundle() {
+    return new ResourceBundle() {
+      Map<String, Object> objects = new HashMap<>();
+
+      @Override
+      protected Object handleGetObject(String key) {
+        objects.put(key, key);
+        return key;
+      }
+
+      @Override
+      public Enumeration<String> getKeys() {
+        return enumeration(objects.keySet());
+      }
+    };
   }
 }

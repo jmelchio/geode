@@ -22,7 +22,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -35,8 +34,11 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.collections.buffer.CircularFifoBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -44,7 +46,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
-import org.mockito.Spy;
+import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,7 +98,7 @@ public class PulseControllerJUnitTest {
   @Autowired
   private Repository repository;
 
-  @Spy
+  @Mock
   Cluster cluster;
 
   private final ObjectMapper mapper = new ObjectMapper();
@@ -105,14 +107,12 @@ public class PulseControllerJUnitTest {
   @Before
   public void setup() throws Exception {
     prepareCluster();
-    when(repository.getCluster()).thenReturn(cluster);
-    when(repository.getClusterWithCredentials(any(), any())).thenReturn(cluster);
-    when(repository.getClusterWithUserNameAndPassword(any(), any())).thenReturn(cluster);
+    doReturn(cluster).when(repository).getCluster();
 
     PulseConfig config = new PulseConfig();
     File tempQueryLog = tempFolder.newFile("query_history.log");
     config.setQueryHistoryFileName(tempQueryLog.toString());
-    when(repository.getPulseConfig()).thenReturn(config);
+    doReturn(config).when(repository).getPulseConfig();
 
     mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
 
@@ -713,8 +713,8 @@ public class PulseControllerJUnitTest {
 
   @Test
   public void dataBrowserQuery() throws Exception {
-    doReturn(mapper.createObjectNode().put("foo", "bar")).when(cluster).executeQuery(anyString(),
-        anyString(), anyInt());
+    ObjectNode queryResult = mapper.createObjectNode().put("foo", "bar");
+    doReturn(queryResult).when(cluster).executeQuery(anyString(), anyString(), anyInt());
 
     String query = "SELECT * FROM " + REGION_PATH;
     mockMvc
@@ -730,7 +730,8 @@ public class PulseControllerJUnitTest {
   @Test
   public void dataBrowserQueryWithMessageResult() throws Exception {
     String message = "Query is invalid due to error : Region mentioned in query probably missing /";
-    doReturn(mapper.createObjectNode().put("message", message)).when(cluster).executeQuery(
+    ObjectNode queryResult = mapper.createObjectNode().put("message", message);
+    doReturn(queryResult).when(cluster).executeQuery(
         anyString(),
         anyString(), anyInt());
 
@@ -739,7 +740,8 @@ public class PulseControllerJUnitTest {
         .perform(get("/dataBrowserQuery").param("query", query)
             .param("members", MEMBER_NAME).principal(PRINCIPAL)
             .accept(APPLICATION_JSON_MEDIA_TYPE))
-        .andExpect(status().isOk()).andExpect(jsonPath("$.message").value(message));
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.message").value(message));
 
     // Verify cluster addQueryInHistory is invoked
     verify(cluster).addQueryInHistory(query, PRINCIPAL.getName());
@@ -782,9 +784,8 @@ public class PulseControllerJUnitTest {
   @Test
   public void dataBrowserExportWithMessageResult() throws Exception {
     String message = "Query is invalid due to error : Region mentioned in query probably missing /";
-    doReturn(mapper.createObjectNode().put("message", message)).when(cluster).executeQuery(
-        anyString(),
-        anyString(), anyInt());
+    ObjectNode queryResult = mapper.createObjectNode().put("message", message);
+    doReturn(queryResult).when(cluster).executeQuery(any(), any(), anyInt());
 
     String query = "SELECT * FROM " + REGION_PATH;
     mockMvc
@@ -819,14 +820,18 @@ public class PulseControllerJUnitTest {
 
   @Test
   public void dataBrowserQueryHistory() throws Exception {
-    dataBrowserQuery();
+    String previouslyExecutedQuery = "\"SELECT * FROM " + REGION_PATH + "\"";
+    ArrayNode userQueryHistory = mapper.createArrayNode();
+    userQueryHistory.addObject().put("queryText", previouslyExecutedQuery);
+
+    doReturn(userQueryHistory).when(cluster).getQueryHistoryByUserId(PRINCIPAL_USER);
 
     mockMvc
         .perform(get("/dataBrowserQueryHistory").param("action", "view").principal(PRINCIPAL)
             .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk()).andExpect(
             jsonPath("$.queryHistory[0].queryText")
-                .value("\"SELECT * FROM " + REGION_PATH + "\""));
+                .value(previouslyExecutedQuery));
   }
 
   @Test
@@ -845,28 +850,31 @@ public class PulseControllerJUnitTest {
   }
 
   private void prepareCluster() {
-    Cluster.Region region = new Cluster.Region();
-    region.setName(REGION_NAME);
-    region.setFullPath(REGION_PATH);
-    region.setRegionType(REGION_TYPE);
-    region.setMemberCount(1);
-    region.setMemberName(new ArrayList<String>() {
+    Cluster.Region clusterRegion = new Cluster.Region();
+    clusterRegion.setName(REGION_NAME);
+    clusterRegion.setFullPath(REGION_PATH);
+    clusterRegion.setRegionType(REGION_TYPE);
+    clusterRegion.setMemberCount(1);
+    clusterRegion.setMemberName(new ArrayList<String>() {
       {
         add(MEMBER_NAME);
       }
     });
+    Map<String, Cluster.Region> clusterRegions = new HashMap<>();
+    clusterRegions.put(REGION_NAME, clusterRegion);
+    doReturn(clusterRegions).when(cluster).getClusterRegions();
 
-    region.setPutsRate(12.31D);
-    region.setGetsRate(27.99D);
+    clusterRegion.setPutsRate(12.31D);
+    clusterRegion.setGetsRate(27.99D);
     Cluster.RegionOnMember regionOnMember = new Cluster.RegionOnMember();
     regionOnMember.setRegionFullPath(REGION_PATH);
     regionOnMember.setMemberName(MEMBER_NAME);
-    region.setRegionOnMembers(new ArrayList<Cluster.RegionOnMember>() {
+    clusterRegion.setRegionOnMembers(new ArrayList<Cluster.RegionOnMember>() {
       {
         add(regionOnMember);
       }
     });
-    cluster.addClusterRegion(REGION_PATH, region);
+    doReturn(clusterRegion).when(cluster).getClusterRegion(REGION_PATH);
 
     Cluster.Member member = new Cluster.Member();
     member.setId(MEMBER_ID);
@@ -878,7 +886,7 @@ public class PulseControllerJUnitTest {
 
     member.setMemberRegions(new HashMap<String, Cluster.Region>() {
       {
-        put(REGION_NAME, region);
+        put(REGION_NAME, clusterRegion);
       }
     });
 
@@ -900,48 +908,61 @@ public class PulseControllerJUnitTest {
       }
     });
 
-    cluster.setMembersHMap(new HashMap<String, Cluster.Member>() {
+    HashMap<String, Cluster.Member> membersHMap = new HashMap<String, Cluster.Member>() {
       {
         put(MEMBER_NAME, member);
       }
-    });
-    cluster.setPhysicalToMember(new HashMap<String, List<Cluster.Member>>() {
-      {
-        put(PHYSICAL_HOST_NAME, new ArrayList<Cluster.Member>() {
+    };
+    doReturn(membersHMap).when(cluster).getMembersHMap();
+
+    HashMap<String, List<Cluster.Member>> physicalToMember =
+        new HashMap<String, List<Cluster.Member>>() {
           {
-            add(member);
+            put(PHYSICAL_HOST_NAME, new ArrayList<Cluster.Member>() {
+              {
+                add(member);
+              }
+            });
           }
-        });
-      }
-    });
-    cluster.setServerName(CLUSTER_NAME);
-    cluster.setMemoryUsageTrend(new CircularFifoBuffer() {
+        };
+    doReturn(physicalToMember).when(cluster).getPhysicalToMember();
+
+    doReturn(CLUSTER_NAME).when(cluster).getServerName();
+
+    CircularFifoBuffer memoryUsageTrend = new CircularFifoBuffer() {
       {
         add(1);
         add(2);
         add(3);
       }
-    });
-    cluster.setWritePerSecTrend(new CircularFifoBuffer() {
+    };
+    doReturn(memoryUsageTrend).when(cluster).getMemoryUsageTrend();
+
+    CircularFifoBuffer writePerSecTrend = new CircularFifoBuffer() {
       {
         add(1.29);
         add(2.3);
         add(3.0);
       }
-    });
-    cluster.setThroughoutReadsTrend(new CircularFifoBuffer() {
+    };
+    doReturn(writePerSecTrend).when(cluster).getWritePerSecTrend();
+
+    CircularFifoBuffer throughoutReadsTrend = new CircularFifoBuffer() {
       {
         add(1);
         add(2);
         add(3);
       }
-    });
-    cluster.setThroughoutWritesTrend(new CircularFifoBuffer() {
+    };
+    doReturn(throughoutReadsTrend).when(cluster).getThroughoutReadsTrend();
+
+    CircularFifoBuffer throughoutWritesTrend = new CircularFifoBuffer() {
       {
         add(4);
         add(5);
         add(6);
       }
-    });
+    };
+    doReturn(throughoutWritesTrend).when(cluster).getThroughoutWritesTrend();
   }
 }
