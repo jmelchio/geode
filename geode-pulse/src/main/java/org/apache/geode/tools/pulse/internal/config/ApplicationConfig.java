@@ -29,6 +29,7 @@ import org.apache.geode.tools.pulse.internal.data.Repository;
 @Configuration
 public class ApplicationConfig {
   @Bean
+  @Profile({"pulse.authentication.default", "pulse.authentication.gemfire"})
   public Repository repository() {
     return new Repository();
   }
