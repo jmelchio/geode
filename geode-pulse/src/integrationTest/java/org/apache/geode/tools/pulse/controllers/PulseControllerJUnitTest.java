@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -112,7 +113,8 @@ public class PulseControllerJUnitTest {
     PulseConfig config = new PulseConfig();
     File tempQueryLog = tempFolder.newFile("query_history.log");
     config.setQueryHistoryFileName(tempQueryLog.toString());
-    doReturn(config).when(repository).getPulseConfig();
+//    doReturn(config).when(repository).getPulseConfig();
+    when(repository.getPulseConfig()).thenReturn(config);
 
     mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
 
@@ -166,9 +168,9 @@ public class PulseControllerJUnitTest {
             .principal(PRINCIPAL)
             .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.ClusterKeyStatistics.readPerSecTrend").isEmpty())
-        .andExpect(jsonPath("$.ClusterKeyStatistics.queriesPerSecTrend").isEmpty())
-        .andExpect(jsonPath("$.ClusterKeyStatistics.writePerSecTrend", contains(1.29, 2.3, 3.0)));
+        .andExpect(jsonPath("$.ClusterKeyStatistics.readPerSecTrend").hasJsonPath())
+        .andExpect(jsonPath("$.ClusterKeyStatistics.queriesPerSecTrend").hasJsonPath())
+        .andExpect(jsonPath("$.ClusterKeyStatistics.writePerSecTrend").hasJsonPath());
   }
 
   @Test
@@ -682,6 +684,8 @@ public class PulseControllerJUnitTest {
 
   @Test
   public void clearAlerts() throws Exception {
+    when(cluster.getNotificationPageNumber()).thenReturn(1);
+
     mockMvc
         .perform(get("/clearAlerts").param("alertType", "1")
             .accept(APPLICATION_JSON_MEDIA_TYPE))
@@ -914,6 +918,9 @@ public class PulseControllerJUnitTest {
       }
     };
     doReturn(membersHMap).when(cluster).getMembersHMap();
+    doReturn(new Cluster.Member[]{member}).when(cluster).getMembers();
+    when(cluster.getMemberCount()).thenReturn(0);
+    when(cluster.getMember(anyString())).thenReturn(member);
 
     HashMap<String, List<Cluster.Member>> physicalToMember =
         new HashMap<String, List<Cluster.Member>>() {
@@ -936,7 +943,8 @@ public class PulseControllerJUnitTest {
         add(3);
       }
     };
-    doReturn(memoryUsageTrend).when(cluster).getMemoryUsageTrend();
+//    doReturn(memoryUsageTrend).when(cluster).getMemoryUsageTrend();
+    when(cluster.getStatisticTrend(Cluster.CLUSTER_STAT_MEMORY_USAGE)).thenReturn(memoryUsageTrend.toArray());
 
     CircularFifoBuffer writePerSecTrend = new CircularFifoBuffer() {
       {
@@ -964,5 +972,11 @@ public class PulseControllerJUnitTest {
       }
     };
     doReturn(throughoutWritesTrend).when(cluster).getThroughoutWritesTrend();
+
+    when(cluster.getAlertsList()).thenReturn(new Cluster.Alert[0]);
+
+    when(cluster.getStatements()).thenReturn(new Cluster.Statement[0]);
+
+    when(cluster.getConnectionErrorMsg()).thenReturn("");
   }
 }

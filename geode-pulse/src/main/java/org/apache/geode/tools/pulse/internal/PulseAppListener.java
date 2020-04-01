@@ -195,8 +195,8 @@ public class PulseAppListener implements ApplicationListener<ApplicationEvent> {
   // Function to load pulse properties from pulse.properties file
 
   private static Properties loadPropertiesFromFile(String propertyFile,
-      ResourceBundle resourceBundle) {
-    final Properties properties = new Properties();
+        ResourceBundle resourceBundle) {
+      final Properties properties = new Properties();
     try (final InputStream stream =
         Thread.currentThread().getContextClassLoader().getResourceAsStream(propertyFile)) {
       logger.info(propertyFile + " " + resourceBundle.getString("LOG_MSG_FILE_FOUND"));
