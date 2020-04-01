@@ -16,6 +16,7 @@ package org.apache.geode.tools.pulse.controllers;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -31,14 +32,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.io.File;
 import java.security.Principal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections.buffer.CircularFifoBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
+import org.mockito.Spy;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -46,7 +54,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -59,55 +66,55 @@ import org.apache.geode.tools.pulse.internal.data.Repository;
 @RunWith(SpringJUnit4ClassRunner.class)
 @WebAppConfiguration
 @ContextConfiguration("classpath*:WEB-INF/pulse-servlet.xml")
-@ActiveProfiles({"test"})
+@ActiveProfiles({"pulse.controller.test"})
 public class PulseControllerJUnitTest {
-
-  public static final String TEST_PRINCIPAL_USER = "test-user";
-
-  public static final String TEST_MEMBER_ID = "member1";
-  public static final String TEST_MEMBER_NAME = "localhost-server";
-  public static final String TEST_CLUSTER_NAME = "mock-cluster";
-  public static final String TEST_REGION_NAME = "mock-region";
-  public static final String TEST_REGION_PATH = "/" + TEST_REGION_NAME;
-  public static final String TEST_REGION_TYPE = "PARTITION";
-  public static final String TEST_AEQ_LISTENER = "async-event-listener";
-  public static final String TEST_CLIENT_NAME = "client-1";
-  public static final String TEST_PHYSICAL_HOST_NAME = "physical-host-1";
-  public static final String TEST_GEMFIRE_VERSION = "1.0.0";
-
-  private static final Principal principal;
-
-  static {
-    principal = () -> TEST_PRINCIPAL_USER;
-  }
+  private static final String AEQ_LISTENER = "async-event-listener";
+  private static final MediaType APPLICATION_JSON_MEDIA_TYPE =
+      MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE);
+  private static final String CLIENT_NAME = "client-1";
+  private static final String CLUSTER_NAME = "mock-cluster";
+  private static final String GEMFIRE_VERSION = "1.0.0";
+  private static final String MEMBER_ID = "member1";
+  private static final String MEMBER_NAME = "localhost-server";
+  private static final String PHYSICAL_HOST_NAME = "physical-host-1";
+  private static final String PRINCIPAL_USER = "test-user";
+  private static final String REGION_NAME = "mock-region";
+  private static final String REGION_PATH = "/" + REGION_NAME;
+  private static final String REGION_TYPE = "PARTITION";
+  private static final Principal PRINCIPAL = () -> PRINCIPAL_USER;
 
   @Rule
   public TemporaryFolder tempFolder = new TemporaryFolder();
 
+  @Rule
+  public MockitoRule mockitoRule = MockitoJUnit.rule();
+
   @Autowired
   private WebApplicationContext wac;
 
-  private MockMvc mockMvc;
 
   @Autowired
   private Repository repository;
 
-  @Autowired
-  private Cluster cluster;
+  @Spy
+  Cluster cluster;
 
   private final ObjectMapper mapper = new ObjectMapper();
+  private MockMvc mockMvc;
 
   @Before
   public void setup() throws Exception {
-    mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
-
+    prepareCluster();
     when(repository.getCluster()).thenReturn(cluster);
+    when(repository.getClusterWithCredentials(any(), any())).thenReturn(cluster);
+    when(repository.getClusterWithUserNameAndPassword(any(), any())).thenReturn(cluster);
 
     PulseConfig config = new PulseConfig();
     File tempQueryLog = tempFolder.newFile("query_history.log");
     config.setQueryHistoryFileName(tempQueryLog.toString());
-
     when(repository.getPulseConfig()).thenReturn(config);
+
+    mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
 
     // PulseController.pulseVersion.setPulseVersion("not empty");
     // PulseController.pulseVersion.setPulseBuildId("not empty");
@@ -121,20 +128,19 @@ public class PulseControllerJUnitTest {
   public void pulseUpdateForClusterDetails() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate").param("pulseData", "{\"ClusterDetails\":\"{}\"}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.ClusterDetails.userName").value(TEST_PRINCIPAL_USER))
+        .andExpect(jsonPath("$.ClusterDetails.userName").value(PRINCIPAL_USER))
         .andExpect(jsonPath("$.ClusterDetails.totalHeap").value(0D))
-        .andExpect(jsonPath("$.ClusterDetails.clusterName").value(TEST_CLUSTER_NAME));
+        .andExpect(jsonPath("$.ClusterDetails.clusterName").value(CLUSTER_NAME));
   }
 
   @Test
   public void pulseUpdateForClusterDiskThroughput() throws Exception {
-    mockMvc
-        .perform(post("/pulseUpdate").param("pulseData", "{\"ClusterDiskThroughput\":\"{}\"}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+    mockMvc.perform(post("/pulseUpdate").param("pulseData", "{\"ClusterDiskThroughput\":\"{}\"}")
+        .principal(PRINCIPAL)
+        .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.ClusterDiskThroughput.currentThroughputWrites").value(0D))
         .andExpect(jsonPath("$.ClusterDiskThroughput.throughputReads", contains(1, 2, 3)))
@@ -146,8 +152,8 @@ public class PulseControllerJUnitTest {
   public void pulseUpdateForClusterGCPauses() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate").param("pulseData", "{\"ClusterJVMPauses\":\"{}\"}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.ClusterJVMPauses.currentGCPauses").value(0))
         .andExpect(jsonPath("$.ClusterJVMPauses.gCPausesTrend").isEmpty());
@@ -157,8 +163,8 @@ public class PulseControllerJUnitTest {
   public void pulseUpdateForClusterKeyStatistics() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate").param("pulseData", "{\"ClusterKeyStatistics\":\"{}\"}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.ClusterKeyStatistics.readPerSecTrend").isEmpty())
         .andExpect(jsonPath("$.ClusterKeyStatistics.queriesPerSecTrend").isEmpty())
@@ -169,18 +175,18 @@ public class PulseControllerJUnitTest {
   public void pulseUpdateForClusterMember() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate").param("pulseData", "{\"ClusterMembers\":\"{}\"}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.ClusterMembers.members[0].serverGroups[0]").value("Default"))
         .andExpect(jsonPath("$.ClusterMembers.members[0].cpuUsage").value(55.77D))
         .andExpect(jsonPath("$.ClusterMembers.members[0].clients").value(1))
         .andExpect(jsonPath("$.ClusterMembers.members[0].heapUsage").value(0))
-        .andExpect(jsonPath("$.ClusterMembers.members[0].name").value(TEST_MEMBER_NAME))
+        .andExpect(jsonPath("$.ClusterMembers.members[0].name").value(MEMBER_NAME))
         .andExpect(jsonPath("$.ClusterMembers.members[0].currentHeapUsage").value(0))
         .andExpect(jsonPath("$.ClusterMembers.members[0].isManager").value(false))
         .andExpect(jsonPath("$.ClusterMembers.members[0].threads").value(0))
-        .andExpect(jsonPath("$.ClusterMembers.members[0].memberId").value(TEST_MEMBER_ID))
+        .andExpect(jsonPath("$.ClusterMembers.members[0].memberId").value(MEMBER_ID))
         .andExpect(jsonPath("$.ClusterMembers.members[0].redundancyZones[0]").value("Default"));
   }
 
@@ -188,18 +194,19 @@ public class PulseControllerJUnitTest {
   public void pulseUpdateForClusterMembersRGraph() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate").param("pulseData", "{\"ClusterMembersRGraph\":\"{}\"}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.ClusterMembersRGraph.memberCount").value(0))
         .andExpect(jsonPath("$.ClusterMembersRGraph.clustor.data").isEmpty())
         .andExpect(jsonPath("$.ClusterMembersRGraph.clustor.name").value(0))
         .andExpect(jsonPath("$.ClusterMembersRGraph.clustor.id").value(0))
         .andExpect(
-            jsonPath("$.ClusterMembersRGraph.clustor.children[0].id").value(TEST_PHYSICAL_HOST_NAME))
+            jsonPath("$.ClusterMembersRGraph.clustor.children[0].id")
+                .value(PHYSICAL_HOST_NAME))
         .andExpect(
             jsonPath("$.ClusterMembersRGraph.clustor.children[0].name").value(
-                TEST_PHYSICAL_HOST_NAME))
+                PHYSICAL_HOST_NAME))
         .andExpect(jsonPath("$.ClusterMembersRGraph.clustor.children[0].data.loadAvg").value(0D))
         .andExpect(jsonPath("$.ClusterMembersRGraph.clustor.children[0].data.sockets").value(0))
         .andExpect(jsonPath("$.ClusterMembersRGraph.clustor.children[0].data.threads").value(0))
@@ -211,12 +218,12 @@ public class PulseControllerJUnitTest {
             .value("hostNormalNode"))
         .andExpect(
             jsonPath("$.ClusterMembersRGraph.clustor.children[0].children[0].id").value(
-                TEST_MEMBER_ID))
+                MEMBER_ID))
         .andExpect(jsonPath("$.ClusterMembersRGraph.clustor.children[0].children[0].name")
-            .value(TEST_MEMBER_NAME))
+            .value(MEMBER_NAME))
         .andExpect(
             jsonPath("$.ClusterMembersRGraph.clustor.children[0].children[0].data.gemfireVersion")
-                .value(TEST_GEMFIRE_VERSION))
+                .value(GEMFIRE_VERSION))
         .andExpect(
             jsonPath("$.ClusterMembersRGraph.clustor.children[0].children[0].data.memoryUsage")
                 .value(0))
@@ -225,7 +232,7 @@ public class PulseControllerJUnitTest {
         .andExpect(jsonPath("$.ClusterMembersRGraph.clustor.children[0].children[0].data.regions")
             .value(1))
         .andExpect(jsonPath("$.ClusterMembersRGraph.clustor.children[0].children[0].data.host")
-            .value(TEST_PHYSICAL_HOST_NAME))
+            .value(PHYSICAL_HOST_NAME))
         .andExpect(
             jsonPath("$.ClusterMembersRGraph.clustor.children[0].children[0].data.port").value("-"))
         .andExpect(jsonPath("$.ClusterMembersRGraph.clustor.children[0].children[0].data.clients")
@@ -253,8 +260,8 @@ public class PulseControllerJUnitTest {
   public void pulseUpdateForClusterMemoryUsage() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate").param("pulseData", "{\"ClusterMemoryUsage\":\"{}\"}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.ClusterMemoryUsage.currentMemoryUsage").value(0))
         .andExpect(jsonPath("$.ClusterMemoryUsage.memoryUsageTrend", containsInAnyOrder(1, 2, 3)));
@@ -264,27 +271,28 @@ public class PulseControllerJUnitTest {
   public void pulseUpdateForClusterRegion() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate").param("pulseData", "{\"ClusterRegion\":\"{}\"}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.ClusterRegion.clusterName").value(TEST_CLUSTER_NAME))
-        .andExpect(jsonPath("$.ClusterRegion.userName").value(TEST_PRINCIPAL_USER))
-        .andExpect(jsonPath("$.ClusterRegion.region[0].regionPath").value(TEST_REGION_PATH))
+        .andExpect(jsonPath("$.ClusterRegion.clusterName").value(CLUSTER_NAME))
+        .andExpect(jsonPath("$.ClusterRegion.userName").value(PRINCIPAL_USER))
+        .andExpect(jsonPath("$.ClusterRegion.region[0].regionPath").value(REGION_PATH))
         .andExpect(jsonPath("$.ClusterRegion.region[0].diskReadsTrend").isEmpty())
         .andExpect(jsonPath("$.ClusterRegion.region[0].memoryUsage").value("0.0000"))
         .andExpect(jsonPath("$.ClusterRegion.region[0].getsRate").value(27.99D))
         .andExpect(jsonPath("$.ClusterRegion.region[0].wanEnabled").value(false))
         .andExpect(jsonPath("$.ClusterRegion.region[0].memberCount").value(1))
-        .andExpect(jsonPath("$.ClusterRegion.region[0].memberNames[0].name").value(TEST_MEMBER_NAME))
-        .andExpect(jsonPath("$.ClusterRegion.region[0].memberNames[0].id").value(TEST_MEMBER_ID))
+        .andExpect(
+            jsonPath("$.ClusterRegion.region[0].memberNames[0].name").value(MEMBER_NAME))
+        .andExpect(jsonPath("$.ClusterRegion.region[0].memberNames[0].id").value(MEMBER_ID))
         .andExpect(jsonPath("$.ClusterRegion.region[0].emptyNodes").value(0))
-        .andExpect(jsonPath("$.ClusterRegion.region[0].type").value(TEST_REGION_TYPE))
+        .andExpect(jsonPath("$.ClusterRegion.region[0].type").value(REGION_TYPE))
         .andExpect(jsonPath("$.ClusterRegion.region[0].isEnableOffHeapMemory").value("OFF"))
         .andExpect(jsonPath("$.ClusterRegion.region[0].putsRate").value(12.31D))
         .andExpect(jsonPath("$.ClusterRegion.region[0].totalMemory").value(0))
         .andExpect(jsonPath("$.ClusterRegion.region[0].entryCount").value(0))
         .andExpect(jsonPath("$.ClusterRegion.region[0].compressionCodec").value("NA"))
-        .andExpect(jsonPath("$.ClusterRegion.region[0].name").value(TEST_REGION_NAME))
+        .andExpect(jsonPath("$.ClusterRegion.region[0].name").value(REGION_NAME))
         .andExpect(jsonPath("$.ClusterRegion.region[0].systemRegionEntryCount").value(0))
         .andExpect(jsonPath("$.ClusterRegion.region[0].persistence").value("OFF"))
         .andExpect(jsonPath("$.ClusterRegion.region[0].memoryReadsTrend").isEmpty())
@@ -298,26 +306,25 @@ public class PulseControllerJUnitTest {
   public void pulseUpdateForClusterRegions() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate").param("pulseData", "{\"ClusterRegions\":\"{}\"}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.ClusterRegions.regions[0].regionPath").value(TEST_REGION_PATH))
+        .andExpect(jsonPath("$.ClusterRegions.regions[0].regionPath").value(REGION_PATH))
         .andExpect(jsonPath("$.ClusterRegions.regions[0].diskReadsTrend").isEmpty())
         .andExpect(jsonPath("$.ClusterRegions.regions[0].memoryUsage").value("0.0000"))
         .andExpect(jsonPath("$.ClusterRegions.regions[0].getsRate").value(27.99D))
         .andExpect(jsonPath("$.ClusterRegions.regions[0].wanEnabled").value(false))
         .andExpect(jsonPath("$.ClusterRegions.regions[0].memberCount").value(1))
-        .andExpect(jsonPath("$.ClusterRegions.regions[0].memberNames[0].name").value(
-            TEST_MEMBER_NAME))
-        .andExpect(jsonPath("$.ClusterRegions.regions[0].memberNames[0].id").value(TEST_MEMBER_ID))
+        .andExpect(jsonPath("$.ClusterRegions.regions[0].memberNames[0].name").value(MEMBER_NAME))
+        .andExpect(jsonPath("$.ClusterRegions.regions[0].memberNames[0].id").value(MEMBER_ID))
         .andExpect(jsonPath("$.ClusterRegions.regions[0].emptyNodes").value(0))
-        .andExpect(jsonPath("$.ClusterRegions.regions[0].type").value(TEST_REGION_TYPE))
+        .andExpect(jsonPath("$.ClusterRegions.regions[0].type").value(REGION_TYPE))
         .andExpect(jsonPath("$.ClusterRegions.regions[0].isEnableOffHeapMemory").value("OFF"))
         .andExpect(jsonPath("$.ClusterRegions.regions[0].putsRate").value(12.31D))
         .andExpect(jsonPath("$.ClusterRegions.regions[0].totalMemory").value(0))
         .andExpect(jsonPath("$.ClusterRegions.regions[0].entryCount").value(0))
         .andExpect(jsonPath("$.ClusterRegions.regions[0].compressionCodec").value("NA"))
-        .andExpect(jsonPath("$.ClusterRegions.regions[0].name").value(TEST_REGION_NAME))
+        .andExpect(jsonPath("$.ClusterRegions.regions[0].name").value(REGION_NAME))
         .andExpect(jsonPath("$.ClusterRegions.regions[0].systemRegionEntryCount").value(0))
         .andExpect(jsonPath("$.ClusterRegions.regions[0].persistence").value("OFF"))
         .andExpect(jsonPath("$.ClusterRegions.regions[0].memoryReadsTrend").isEmpty())
@@ -332,39 +339,37 @@ public class PulseControllerJUnitTest {
     mockMvc
         .perform(post("/pulseUpdate")
             .param("pulseData",
-                "{\"ClusterSelectedRegion\":{\"regionFullPath\":\"" + TEST_REGION_PATH + "\"}}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+                "{\"ClusterSelectedRegion\":{\"regionFullPath\":\"" + REGION_PATH + "\"}}")
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.lruEvictionRate").value(0D))
         .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.getsRate").value(27.99D))
         .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.emptyNodes").value(0))
-        .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.type").value(TEST_REGION_TYPE))
+        .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.type").value(REGION_TYPE))
         .andExpect(
             jsonPath("$.ClusterSelectedRegion.selectedRegion.isEnableOffHeapMemory").value("OFF"))
-        .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.path").value(TEST_REGION_PATH))
+        .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.path").value(REGION_PATH))
         .andExpect(
             jsonPath("$.ClusterSelectedRegion.selectedRegion.members[0].cpuUsage").value(55.77D))
         .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.members[0].clients").value(1))
         .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.members[0].heapUsage").value(0))
         .andExpect(
-            jsonPath("$.ClusterSelectedRegion.selectedRegion.members[0].name").value(
-                TEST_MEMBER_NAME))
+            jsonPath("$.ClusterSelectedRegion.selectedRegion.members[0].name").value(MEMBER_NAME))
         .andExpect(
             jsonPath("$.ClusterSelectedRegion.selectedRegion.members[0].currentHeapUsage").value(0))
         .andExpect(
             jsonPath("$.ClusterSelectedRegion.selectedRegion.members[0].isManager").value(false))
         .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.members[0].threads").value(0))
         .andExpect(
-            jsonPath("$.ClusterSelectedRegion.selectedRegion.members[0].memberId").value(
-                TEST_MEMBER_ID))
+            jsonPath("$.ClusterSelectedRegion.selectedRegion.members[0].memberId").value(MEMBER_ID))
         .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.members[0].uptime")
             .value("0 Hours 0 Mins 1 Secs"))
         .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.memoryReadsTrend").isEmpty())
         .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.diskWritesTrend").isEmpty())
         .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.dataUsage").value(0))
-        .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.regionPath").value(
-            TEST_REGION_PATH))
+        .andExpect(
+            jsonPath("$.ClusterSelectedRegion.selectedRegion.regionPath").value(REGION_PATH))
         .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.diskReadsTrend").isEmpty())
         .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.memoryUsage").value("0.0000"))
         .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.wanEnabled").value(false))
@@ -373,7 +378,7 @@ public class PulseControllerJUnitTest {
         .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.totalMemory").value(0))
         .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.entryCount").value(0))
         .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.compressionCodec").value("NA"))
-        .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.name").value(TEST_REGION_NAME))
+        .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.name").value(REGION_NAME))
         .andExpect(
             jsonPath("$.ClusterSelectedRegion.selectedRegion.systemRegionEntryCount").value(0))
         .andExpect(jsonPath("$.ClusterSelectedRegion.selectedRegion.persistence").value("OFF"))
@@ -387,44 +392,44 @@ public class PulseControllerJUnitTest {
         .perform(
             post("/pulseUpdate")
                 .param("pulseData",
-                    "{\"ClusterSelectedRegionsMember\":{\"regionFullPath\":\"" + TEST_REGION_PATH
+                    "{\"ClusterSelectedRegionsMember\":{\"regionFullPath\":\"" + REGION_PATH
                         + "\"}}")
-                .principal(principal)
-                .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+                .principal(PRINCIPAL)
+                .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(
             jsonPath("$.ClusterSelectedRegionsMember.selectedRegionsMembers.%s.diskReadsTrend",
-                TEST_MEMBER_NAME).isEmpty())
+                MEMBER_NAME).isEmpty())
         .andExpect(
             jsonPath("$.ClusterSelectedRegionsMember.selectedRegionsMembers.%s.regionFullPath",
-                TEST_MEMBER_NAME).value(TEST_REGION_PATH))
+                MEMBER_NAME).value(REGION_PATH))
         .andExpect(jsonPath("$.ClusterSelectedRegionsMember.selectedRegionsMembers.%s.entryCount",
-            TEST_MEMBER_NAME).value(0))
+            MEMBER_NAME).value(0))
         .andExpect(jsonPath("$.ClusterSelectedRegionsMember.selectedRegionsMembers.%s.accessor",
-            TEST_MEMBER_NAME).value("True"))
+            MEMBER_NAME).value("True"))
         .andExpect(jsonPath("$.ClusterSelectedRegionsMember.selectedRegionsMembers.%s.memberName",
-            TEST_MEMBER_NAME).value(TEST_MEMBER_NAME))
+            MEMBER_NAME).value(MEMBER_NAME))
         .andExpect(
             jsonPath("$.ClusterSelectedRegionsMember.selectedRegionsMembers.%s.memoryReadsTrend",
-                TEST_MEMBER_NAME).isEmpty())
+                MEMBER_NAME).isEmpty())
         .andExpect(
             jsonPath("$.ClusterSelectedRegionsMember.selectedRegionsMembers.%s.diskWritesTrend",
-                TEST_MEMBER_NAME).isEmpty())
+                MEMBER_NAME).isEmpty())
         .andExpect(
             jsonPath("$.ClusterSelectedRegionsMember.selectedRegionsMembers.%s.memoryWritesTrend",
-                TEST_MEMBER_NAME).isEmpty())
+                MEMBER_NAME).isEmpty())
         .andExpect(jsonPath("$.ClusterSelectedRegionsMember.selectedRegionsMembers.%s.entrySize",
-            TEST_MEMBER_NAME).value(0))
-        .andExpect(jsonPath("$.ClusterSelectedRegionsMember.clusterName").value(TEST_CLUSTER_NAME))
-        .andExpect(jsonPath("$.ClusterSelectedRegionsMember.userName").value(TEST_PRINCIPAL_USER));
+            MEMBER_NAME).value(0))
+        .andExpect(jsonPath("$.ClusterSelectedRegionsMember.clusterName").value(CLUSTER_NAME))
+        .andExpect(jsonPath("$.ClusterSelectedRegionsMember.userName").value(PRINCIPAL_USER));
   }
 
   @Test
   public void pulseUpdateForClusterWANInfo() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate").param("pulseData", "{\"ClusterWANInfo\":\"{}\"}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.ClusterWANInfo.connectedClusters").isEmpty());
   }
@@ -434,9 +439,9 @@ public class PulseControllerJUnitTest {
     mockMvc
         .perform(post("/pulseUpdate")
             .param("pulseData",
-                "{\"MemberAsynchEventQueues\":{\"memberName\":\"" + TEST_MEMBER_NAME + "\"}}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+                "{\"MemberAsynchEventQueues\":{\"memberName\":\"" + MEMBER_NAME + "\"}}")
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.MemberAsynchEventQueues.isAsyncEventQueuesPresent").value(true))
         .andExpect(
@@ -447,7 +452,7 @@ public class PulseControllerJUnitTest {
         .andExpect(
             jsonPath("$.MemberAsynchEventQueues.asyncEventQueues[0].senderType").value(false))
         .andExpect(jsonPath("$.MemberAsynchEventQueues.asyncEventQueues[0].asyncEventListener")
-            .value(TEST_AEQ_LISTENER))
+            .value(AEQ_LISTENER))
         .andExpect(jsonPath("$.MemberAsynchEventQueues.asyncEventQueues[0].batchSize").value(0))
         .andExpect(jsonPath("$.MemberAsynchEventQueues.asyncEventQueues[0].primary").value(false));
   }
@@ -456,17 +461,17 @@ public class PulseControllerJUnitTest {
   public void pulseUpdateForMemberClients() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate")
-            .param("pulseData", "{\"MemberClients\":{\"memberName\":\"" + TEST_MEMBER_NAME + "\"}}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .param("pulseData", "{\"MemberClients\":{\"memberName\":\"" + MEMBER_NAME + "\"}}")
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk()).andExpect(jsonPath("$.MemberClients.name").value(
-        TEST_MEMBER_NAME))
+            MEMBER_NAME))
         .andExpect(jsonPath("$.MemberClients.memberClients[0].puts").value(0))
         .andExpect(jsonPath("$.MemberClients.memberClients[0].cpuUsage").value("0.0000"))
         .andExpect(jsonPath("$.MemberClients.memberClients[0].clientId").value("100"))
         .andExpect(jsonPath("$.MemberClients.memberClients[0].queueSize").value(0))
         .andExpect(jsonPath("$.MemberClients.memberClients[0].clientCQCount").value(0))
-        .andExpect(jsonPath("$.MemberClients.memberClients[0].name").value(TEST_CLIENT_NAME))
+        .andExpect(jsonPath("$.MemberClients.memberClients[0].name").value(CLIENT_NAME))
         .andExpect(jsonPath("$.MemberClients.memberClients[0].isConnected").value("No"))
         .andExpect(jsonPath("$.MemberClients.memberClients[0].threads").value(0))
         .andExpect(jsonPath("$.MemberClients.memberClients[0].isSubscriptionEnabled").value("No"))
@@ -478,22 +483,22 @@ public class PulseControllerJUnitTest {
   public void pulseUpdateForMemberDetails() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate")
-            .param("pulseData", "{\"MemberDetails\":{\"memberName\":\"" + TEST_MEMBER_NAME + "\"}}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .param("pulseData", "{\"MemberDetails\":{\"memberName\":\"" + MEMBER_NAME + "\"}}")
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk()).andExpect(jsonPath("$.MemberDetails.name").value(
-        TEST_MEMBER_NAME))
+            MEMBER_NAME))
         .andExpect(jsonPath("$.MemberDetails.offHeapUsedSize").value(0))
         .andExpect(jsonPath("$.MemberDetails.diskStorageUsed").value(0D))
         .andExpect(jsonPath("$.MemberDetails.regionsCount").value(1))
-        .andExpect(jsonPath("$.MemberDetails.clusterName").value(TEST_CLUSTER_NAME))
-        .andExpect(jsonPath("$.MemberDetails.name").value(TEST_MEMBER_NAME))
+        .andExpect(jsonPath("$.MemberDetails.clusterName").value(CLUSTER_NAME))
+        .andExpect(jsonPath("$.MemberDetails.name").value(MEMBER_NAME))
         .andExpect(jsonPath("$.MemberDetails.threads").value(0))
         .andExpect(jsonPath("$.MemberDetails.clusterId").isNotEmpty())
         .andExpect(jsonPath("$.MemberDetails.numClients").value(1))
-        .andExpect(jsonPath("$.MemberDetails.userName").value(TEST_PRINCIPAL_USER))
+        .andExpect(jsonPath("$.MemberDetails.userName").value(PRINCIPAL_USER))
         .andExpect(jsonPath("$.MemberDetails.offHeapFreeSize").value(0))
-        .andExpect(jsonPath("$.MemberDetails.memberId").value(TEST_MEMBER_ID))
+        .andExpect(jsonPath("$.MemberDetails.memberId").value(MEMBER_ID))
         .andExpect(jsonPath("$.MemberDetails.status").value("Normal"));
   }
 
@@ -502,9 +507,9 @@ public class PulseControllerJUnitTest {
     mockMvc
         .perform(post("/pulseUpdate")
             .param("pulseData",
-                "{\"MemberDiskThroughput\":{\"memberName\":\"" + TEST_MEMBER_NAME + "\"}}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+                "{\"MemberDiskThroughput\":{\"memberName\":\"" + MEMBER_NAME + "\"}}")
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.MemberDiskThroughput.throughputWritesTrend").isEmpty())
         .andExpect(jsonPath("$.MemberDiskThroughput.throughputReadsTrend").isEmpty())
@@ -516,9 +521,10 @@ public class PulseControllerJUnitTest {
   public void pulseUpdateForMemberGatewayHub() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate")
-            .param("pulseData", "{\"MemberGatewayHub\":{\"memberName\":\"" + TEST_MEMBER_NAME + "\"}}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .param("pulseData",
+                "{\"MemberGatewayHub\":{\"memberName\":\"" + MEMBER_NAME + "\"}}")
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.MemberGatewayHub.isGatewayReceiver").value(false))
         .andExpect(jsonPath("$.MemberGatewayHub.asyncEventQueues[0].batchTimeInterval").value(0))
@@ -527,7 +533,7 @@ public class PulseControllerJUnitTest {
         .andExpect(jsonPath("$.MemberGatewayHub.asyncEventQueues[0].queueSize").value(0))
         .andExpect(jsonPath("$.MemberGatewayHub.asyncEventQueues[0].senderType").value(false))
         .andExpect(jsonPath("$.MemberGatewayHub.asyncEventQueues[0].asyncEventListener")
-            .value(TEST_AEQ_LISTENER))
+            .value(AEQ_LISTENER))
         .andExpect(jsonPath("$.MemberGatewayHub.asyncEventQueues[0].batchSize").value(0))
         .andExpect(jsonPath("$.MemberGatewayHub.asyncEventQueues[0].primary").value(false))
         .andExpect(jsonPath("$.MemberGatewayHub.isGatewaySender").value(false))
@@ -539,9 +545,10 @@ public class PulseControllerJUnitTest {
   public void pulseUpdateForMemberGCPauses() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate")
-            .param("pulseData", "{\"MemberGCPauses\":{\"memberName\":\"" + TEST_MEMBER_NAME + "\"}}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .param("pulseData",
+                "{\"MemberGCPauses\":{\"memberName\":\"" + MEMBER_NAME + "\"}}")
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk()).andExpect(jsonPath("$.MemberGCPauses.gcPausesCount").value(0))
         .andExpect(jsonPath("$.MemberGCPauses.gcPausesTrend").isEmpty());
   }
@@ -550,9 +557,10 @@ public class PulseControllerJUnitTest {
   public void pulseUpdateForMemberHeapUsage() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate")
-            .param("pulseData", "{\"MemberHeapUsage\":{\"memberName\":\"" + TEST_MEMBER_NAME + "\"}}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .param("pulseData",
+                "{\"MemberHeapUsage\":{\"memberName\":\"" + MEMBER_NAME + "\"}}")
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.MemberHeapUsage.heapUsageTrend").isEmpty())
         .andExpect(jsonPath("$.MemberHeapUsage.currentHeapUsage").value(0));
@@ -563,9 +571,9 @@ public class PulseControllerJUnitTest {
     mockMvc
         .perform(post("/pulseUpdate")
             .param("pulseData",
-                "{\"MemberKeyStatistics\":{\"memberName\":\"" + TEST_MEMBER_NAME + "\"}}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+                "{\"MemberKeyStatistics\":{\"memberName\":\"" + MEMBER_NAME + "\"}}")
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.MemberKeyStatistics.readPerSecTrend").isEmpty())
         .andExpect(jsonPath("$.MemberKeyStatistics.cpuUsageTrend").isEmpty())
@@ -577,18 +585,18 @@ public class PulseControllerJUnitTest {
   public void pulseUpdateForMemberRegions() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate")
-            .param("pulseData", "{\"MemberRegions\":{\"memberName\":\"" + TEST_MEMBER_NAME + "\"}}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .param("pulseData", "{\"MemberRegions\":{\"memberName\":\"" + MEMBER_NAME + "\"}}")
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk()).andExpect(jsonPath("$.MemberRegions.name").value(
-        TEST_MEMBER_NAME))
-        .andExpect(jsonPath("$.MemberRegions.memberRegions[0].fullPath").value(TEST_REGION_PATH))
+            MEMBER_NAME))
+        .andExpect(jsonPath("$.MemberRegions.memberRegions[0].fullPath").value(REGION_PATH))
         .andExpect(jsonPath("$.MemberRegions.memberRegions[0].entryCount").value(0))
-        .andExpect(jsonPath("$.MemberRegions.memberRegions[0].name").value(TEST_REGION_NAME))
+        .andExpect(jsonPath("$.MemberRegions.memberRegions[0].name").value(REGION_NAME))
         .andExpect(jsonPath("$.MemberRegions.memberRegions[0].diskStoreName").value(""))
         .andExpect(jsonPath("$.MemberRegions.memberRegions[0].gatewayEnabled").value(false))
         .andExpect(jsonPath("$.MemberRegions.memberRegions[0].entrySize").value("0.0000"))
-        .andExpect(jsonPath("$.MemberRegions.memberId").value(TEST_MEMBER_ID))
+        .andExpect(jsonPath("$.MemberRegions.memberId").value(MEMBER_ID))
         .andExpect(jsonPath("$.MemberRegions.status").value("Normal"));
   }
 
@@ -596,21 +604,21 @@ public class PulseControllerJUnitTest {
   public void pulseUpdateForMembersList() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate")
-            .param("pulseData", "{\"MembersList\":{\"memberName\":\"" + TEST_MEMBER_NAME + "\"}}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .param("pulseData", "{\"MembersList\":{\"memberName\":\"" + MEMBER_NAME + "\"}}")
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.MembersList.clusterMembers[0].name").value(TEST_MEMBER_NAME))
-        .andExpect(jsonPath("$.MembersList.clusterMembers[0].memberId").value(TEST_MEMBER_ID))
-        .andExpect(jsonPath("$.MembersList.clusterName").value(TEST_CLUSTER_NAME));
+        .andExpect(jsonPath("$.MembersList.clusterMembers[0].name").value(MEMBER_NAME))
+        .andExpect(jsonPath("$.MembersList.clusterMembers[0].memberId").value(MEMBER_ID))
+        .andExpect(jsonPath("$.MembersList.clusterName").value(CLUSTER_NAME));
   }
 
   @Test
   public void pulseUpdateForPulseVersion() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate").param("pulseData", "{\"PulseVersion\":\"{}\"}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.PulseVersion.sourceDate").value("not empty"))
         .andExpect(jsonPath("$.PulseVersion.sourceRepository").value("not empty"))
@@ -624,8 +632,8 @@ public class PulseControllerJUnitTest {
   public void pulseUpdateForQueryStatistics() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate").param("pulseData", "{\"QueryStatistics\":\"{}\"}")
-            .principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk()).andExpect(jsonPath("$.QueryStatistics.queriesList").isEmpty())
         .andExpect(jsonPath("$.QueryStatistics.connectedFlag").value(false))
         .andExpect(jsonPath("$.QueryStatistics.connectedErrorMsg").value(""));
@@ -635,8 +643,8 @@ public class PulseControllerJUnitTest {
   public void pulseUpdateForSystemAlerts() throws Exception {
     mockMvc
         .perform(post("/pulseUpdate")
-            .param("pulseData", "{\"SystemAlerts\":{\"pageNumber\":\"1\"}}").principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .param("pulseData", "{\"SystemAlerts\":{\"pageNumber\":\"1\"}}").principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk()).andExpect(jsonPath("$.SystemAlerts.pageNumber").value(1))
         .andExpect(jsonPath("$.SystemAlerts.connectedFlag").value(false))
         .andExpect(jsonPath("$.SystemAlerts.connectedErrorMsg").value(""))
@@ -647,15 +655,15 @@ public class PulseControllerJUnitTest {
   public void authenticateUserNotLoggedIn() throws Exception {
     mockMvc
         .perform(get("/authenticateUser")
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk()).andExpect(jsonPath("$.isUserLoggedIn").value(false));
   }
 
   @Test
   public void authenticateUserLoggedIn() throws Exception {
     mockMvc
-        .perform(get("/authenticateUser").principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+        .perform(get("/authenticateUser").principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk()).andExpect(jsonPath("$.isUserLoggedIn").value(true));
   }
 
@@ -663,7 +671,7 @@ public class PulseControllerJUnitTest {
   public void pulseVersion() throws Exception {
     mockMvc
         .perform(get("/pulseVersion")
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk()).andExpect(jsonPath("$.pulseVersion").isNotEmpty())
         .andExpect(jsonPath("$.buildId").isNotEmpty())
         .andExpect(jsonPath("$.buildDate").isNotEmpty())
@@ -676,7 +684,7 @@ public class PulseControllerJUnitTest {
   public void clearAlerts() throws Exception {
     mockMvc
         .perform(get("/clearAlerts").param("alertType", "1")
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.pageNumber").value(1))
         .andExpect(jsonPath("$.systemAlerts").isEmpty())
@@ -688,7 +696,7 @@ public class PulseControllerJUnitTest {
   public void acknowledgeAlert() throws Exception {
     mockMvc
         .perform(get("/acknowledgeAlert").param("alertId", "1")
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("deleted"));
   }
 
@@ -696,11 +704,11 @@ public class PulseControllerJUnitTest {
   public void dataBrowserRegions() throws Exception {
     mockMvc
         .perform(get("/dataBrowserRegions")
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
-        .andExpect(status().isOk()).andExpect(jsonPath("$.clusterName").value(TEST_CLUSTER_NAME))
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.clusterName").value(CLUSTER_NAME))
         .andExpect(jsonPath("$.connectedFlag").value(false))
-        .andExpect(jsonPath("$.clusterRegions[0].fullPath").value(TEST_REGION_PATH))
-        .andExpect(jsonPath("$.clusterRegions[0].regionType").value(TEST_REGION_TYPE));
+        .andExpect(jsonPath("$.clusterRegions[0].fullPath").value(REGION_PATH))
+        .andExpect(jsonPath("$.clusterRegions[0].regionType").value(REGION_TYPE));
   }
 
   @Test
@@ -708,15 +716,15 @@ public class PulseControllerJUnitTest {
     doReturn(mapper.createObjectNode().put("foo", "bar")).when(cluster).executeQuery(anyString(),
         anyString(), anyInt());
 
-    String query = "SELECT * FROM " + TEST_REGION_PATH;
+    String query = "SELECT * FROM " + REGION_PATH;
     mockMvc
         .perform(get("/dataBrowserQuery").param("query", query)
-            .param("members", TEST_MEMBER_NAME).principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .param("members", MEMBER_NAME).principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk()).andExpect(jsonPath("$.foo").value("bar"));
 
     // Verify cluster addQueryInHistory is invoked
-    verify(cluster).addQueryInHistory(query, principal.getName());
+    verify(cluster).addQueryInHistory(query, PRINCIPAL.getName());
   }
 
   @Test
@@ -726,15 +734,15 @@ public class PulseControllerJUnitTest {
         anyString(),
         anyString(), anyInt());
 
-    String query = "SELECT * FROM " + TEST_REGION_PATH;
+    String query = "SELECT * FROM " + REGION_PATH;
     mockMvc
         .perform(get("/dataBrowserQuery").param("query", query)
-            .param("members", TEST_MEMBER_NAME).principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .param("members", MEMBER_NAME).principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk()).andExpect(jsonPath("$.message").value(message));
 
     // Verify cluster addQueryInHistory is invoked
-    verify(cluster).addQueryInHistory(query, principal.getName());
+    verify(cluster).addQueryInHistory(query, PRINCIPAL.getName());
   }
 
   @Test
@@ -742,15 +750,15 @@ public class PulseControllerJUnitTest {
     doThrow(new IllegalStateException()).when(cluster).executeQuery(anyString(),
         anyString(), anyInt());
 
-    String query = "SELECT * FROM " + TEST_REGION_PATH;
+    String query = "SELECT * FROM " + REGION_PATH;
     mockMvc
         .perform(get("/dataBrowserQuery").param("query", query)
-            .param("members", TEST_MEMBER_NAME).principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .param("members", MEMBER_NAME).principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk()).andExpect(content().string("{}"));
 
     // Verify cluster addQueryInHistory is invoked
-    verify(cluster).addQueryInHistory(query, principal.getName());
+    verify(cluster).addQueryInHistory(query, PRINCIPAL.getName());
   }
 
   @Test
@@ -758,17 +766,17 @@ public class PulseControllerJUnitTest {
     doReturn(mapper.createObjectNode().put("foo", "bar")).when(cluster).executeQuery(anyString(),
         anyString(), anyInt());
 
-    String query = "SELECT * FROM " + TEST_REGION_PATH;
+    String query = "SELECT * FROM " + REGION_PATH;
     mockMvc
         .perform(get("/dataBrowserExport").param("query", query)
-            .param("members", TEST_MEMBER_NAME).principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .param("members", MEMBER_NAME).principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(header().string("Content-Disposition", "attachment; filename=results.json"))
         .andExpect(jsonPath("$.foo").value("bar"));
 
     // Verify cluster addQueryInHistory is invoked
-    verify(cluster).addQueryInHistory(query, principal.getName());
+    verify(cluster).addQueryInHistory(query, PRINCIPAL.getName());
   }
 
   @Test
@@ -778,17 +786,17 @@ public class PulseControllerJUnitTest {
         anyString(),
         anyString(), anyInt());
 
-    String query = "SELECT * FROM " + TEST_REGION_PATH;
+    String query = "SELECT * FROM " + REGION_PATH;
     mockMvc
         .perform(get("/dataBrowserExport").param("query", query)
-            .param("members", TEST_MEMBER_NAME).principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .param("members", MEMBER_NAME).principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(header().string("Content-Disposition", "attachment; filename=results.json"))
         .andExpect(jsonPath("$.message").value(message));
 
     // Verify cluster addQueryInHistory is invoked
-    verify(cluster).addQueryInHistory(query, principal.getName());
+    verify(cluster).addQueryInHistory(query, PRINCIPAL.getName());
   }
 
   @Test
@@ -796,17 +804,17 @@ public class PulseControllerJUnitTest {
     doThrow(new IllegalStateException()).when(cluster).executeQuery(anyString(),
         anyString(), anyInt());
 
-    String query = "SELECT * FROM " + TEST_REGION_PATH;
+    String query = "SELECT * FROM " + REGION_PATH;
     mockMvc
         .perform(get("/dataBrowserExport").param("query", query)
-            .param("members", TEST_MEMBER_NAME).principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+            .param("members", MEMBER_NAME).principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(header().string("Content-Disposition", "attachment; filename=results.json"))
         .andExpect(content().string("{}"));
 
     // Verify cluster addQueryInHistory is invoked
-    verify(cluster).addQueryInHistory(query, principal.getName());
+    verify(cluster).addQueryInHistory(query, PRINCIPAL.getName());
   }
 
   @Test
@@ -814,17 +822,18 @@ public class PulseControllerJUnitTest {
     dataBrowserQuery();
 
     mockMvc
-        .perform(get("/dataBrowserQueryHistory").param("action", "view").principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+        .perform(get("/dataBrowserQueryHistory").param("action", "view").principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk()).andExpect(
-            jsonPath("$.queryHistory[0].queryText").value("\"SELECT * FROM " + TEST_REGION_PATH + "\""));
+            jsonPath("$.queryHistory[0].queryText")
+                .value("\"SELECT * FROM " + REGION_PATH + "\""));
   }
 
   @Test
   public void getQueryStatisticsGridModel() throws Exception {
     mockMvc
-        .perform(get("/getQueryStatisticsGridModel").principal(principal)
-            .accept(MediaType.parseMediaType(MediaType.APPLICATION_JSON_VALUE)))
+        .perform(get("/getQueryStatisticsGridModel").principal(PRINCIPAL)
+            .accept(APPLICATION_JSON_MEDIA_TYPE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.columnNames",
             containsInAnyOrder("Query", "NumExecution", "TotalExecutionTime(ns)",
@@ -833,5 +842,106 @@ public class PulseControllerJUnitTest {
                 "RoutingInfoTime(ms)", "GenerateTime(ms)", "TotalCompilationTime(ms)",
                 "ExecutionTime(ns)", "ProjectionTime(ns)", "RowsModificationTime(ns)",
                 "QNNumRowsSeen", "QNMsgSendTime(ns)", "QNMsgSerTime(ns)", "QNRespDeSerTime(ns)")));
+  }
+
+  private void prepareCluster() {
+    Cluster.Region region = new Cluster.Region();
+    region.setName(REGION_NAME);
+    region.setFullPath(REGION_PATH);
+    region.setRegionType(REGION_TYPE);
+    region.setMemberCount(1);
+    region.setMemberName(new ArrayList<String>() {
+      {
+        add(MEMBER_NAME);
+      }
+    });
+
+    region.setPutsRate(12.31D);
+    region.setGetsRate(27.99D);
+    Cluster.RegionOnMember regionOnMember = new Cluster.RegionOnMember();
+    regionOnMember.setRegionFullPath(REGION_PATH);
+    regionOnMember.setMemberName(MEMBER_NAME);
+    region.setRegionOnMembers(new ArrayList<Cluster.RegionOnMember>() {
+      {
+        add(regionOnMember);
+      }
+    });
+    cluster.addClusterRegion(REGION_PATH, region);
+
+    Cluster.Member member = new Cluster.Member();
+    member.setId(MEMBER_ID);
+    member.setName(MEMBER_NAME);
+    member.setUptime(1L);
+    member.setHost(PHYSICAL_HOST_NAME);
+    member.setGemfireVersion(GEMFIRE_VERSION);
+    member.setCpuUsage(55.77123D);
+
+    member.setMemberRegions(new HashMap<String, Cluster.Region>() {
+      {
+        put(REGION_NAME, region);
+      }
+    });
+
+    Cluster.AsyncEventQueue aeq = new Cluster.AsyncEventQueue();
+    aeq.setAsyncEventListener(AEQ_LISTENER);
+    member.setAsyncEventQueueList(new ArrayList<Cluster.AsyncEventQueue>() {
+      {
+        add(aeq);
+      }
+    });
+
+    Cluster.Client client = new Cluster.Client();
+    client.setId("100");
+    client.setName(CLIENT_NAME);
+    client.setUptime(1L);
+    member.setMemberClientsHMap(new HashMap<String, Cluster.Client>() {
+      {
+        put(CLIENT_NAME, client);
+      }
+    });
+
+    cluster.setMembersHMap(new HashMap<String, Cluster.Member>() {
+      {
+        put(MEMBER_NAME, member);
+      }
+    });
+    cluster.setPhysicalToMember(new HashMap<String, List<Cluster.Member>>() {
+      {
+        put(PHYSICAL_HOST_NAME, new ArrayList<Cluster.Member>() {
+          {
+            add(member);
+          }
+        });
+      }
+    });
+    cluster.setServerName(CLUSTER_NAME);
+    cluster.setMemoryUsageTrend(new CircularFifoBuffer() {
+      {
+        add(1);
+        add(2);
+        add(3);
+      }
+    });
+    cluster.setWritePerSecTrend(new CircularFifoBuffer() {
+      {
+        add(1.29);
+        add(2.3);
+        add(3.0);
+      }
+    });
+    cluster.setThroughoutReadsTrend(new CircularFifoBuffer() {
+      {
+        add(1);
+        add(2);
+        add(3);
+      }
+    });
+    cluster.setThroughoutWritesTrend(new CircularFifoBuffer() {
+      {
+        add(4);
+        add(5);
+        add(6);
+      }
+    });
   }
 }
