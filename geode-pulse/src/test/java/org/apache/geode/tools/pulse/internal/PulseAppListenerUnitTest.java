@@ -29,7 +29,6 @@ import static org.mockito.Mockito.when;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.ResourceBundle;
-import java.util.function.BiFunction;
 
 import javax.servlet.ServletContext;
 
@@ -66,14 +65,15 @@ public class PulseAppListenerUnitTest {
   private PulseController pulseController;
 
   @Mock
-  private BiFunction<String, ResourceBundle, Properties> loadProperties;
+  private PropertiesFileLoader loadProperties;
 
   private ResourceBundle resourceBundle;
   private PulseVersion pulseVersion;
 
   @Before
   public void setUp() {
-    when(loadProperties.apply(eq("GemFireVersion.properties"), any())).thenReturn(new Properties());
+    when(loadProperties.loadProperties(eq("GemFireVersion.properties"), any()))
+        .thenReturn(new Properties());
     pulseVersion = new PulseVersion(repository);
 
     WebApplicationContext applicationContext = mock(WebApplicationContext.class);
@@ -118,7 +118,7 @@ public class PulseAppListenerUnitTest {
     resourceBundle = new StubResourceBundle();
 
     when(repository.getResourceBundle()).thenReturn(resourceBundle);
-    when(loadProperties.apply(anyString(), any())).thenReturn(new Properties());
+    when(loadProperties.loadProperties(anyString(), any())).thenReturn(new Properties());
     when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
 
     subject = new PulseAppListener(true, loadProperties, pulseController, repository);
@@ -136,8 +136,9 @@ public class PulseAppListenerUnitTest {
     sslProperties.put("foo", "bar");
 
     when(repository.getResourceBundle()).thenReturn(resourceBundle);
-    when(loadProperties.apply(eq("pulse.properties"), any())).thenReturn(new Properties());
-    when(loadProperties.apply(eq("pulsesecurity.properties"), any())).thenReturn(sslProperties);
+    when(loadProperties.loadProperties(eq("pulse.properties"), any())).thenReturn(new Properties());
+    when(loadProperties.loadProperties(eq("pulsesecurity.properties"), any()))
+        .thenReturn(sslProperties);
     when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
 
     subject = new PulseAppListener(true, loadProperties, pulseController, repository);

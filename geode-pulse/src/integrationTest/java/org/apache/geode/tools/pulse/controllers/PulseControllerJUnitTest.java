@@ -61,6 +61,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import org.apache.geode.test.junit.categories.PulseTest;
+import org.apache.geode.tools.pulse.internal.PropertiesFileLoader;
 import org.apache.geode.tools.pulse.internal.data.Cluster;
 import org.apache.geode.tools.pulse.internal.data.PulseConfig;
 import org.apache.geode.tools.pulse.internal.data.Repository;
@@ -99,6 +100,9 @@ public class PulseControllerJUnitTest {
   @Autowired
   private Repository repository;
 
+  @Autowired
+  private PropertiesFileLoader propertiesLoader;
+
   @Mock
   Cluster cluster;
 
@@ -113,17 +117,9 @@ public class PulseControllerJUnitTest {
     PulseConfig config = new PulseConfig();
     File tempQueryLog = tempFolder.newFile("query_history.log");
     config.setQueryHistoryFileName(tempQueryLog.toString());
-//    doReturn(config).when(repository).getPulseConfig();
     when(repository.getPulseConfig()).thenReturn(config);
 
     mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
-
-    // PulseController.pulseVersion.setPulseVersion("not empty");
-    // PulseController.pulseVersion.setPulseBuildId("not empty");
-    // PulseController.pulseVersion.setPulseBuildDate("not empty");
-    // PulseController.pulseVersion.setPulseSourceDate("not empty");
-    // PulseController.pulseVersion.setPulseSourceRevision("not empty");
-    // PulseController.pulseVersion.setPulseSourceRepository("not empty");
   }
 
   @Test
@@ -918,7 +914,7 @@ public class PulseControllerJUnitTest {
       }
     };
     doReturn(membersHMap).when(cluster).getMembersHMap();
-    doReturn(new Cluster.Member[]{member}).when(cluster).getMembers();
+    doReturn(new Cluster.Member[] {member}).when(cluster).getMembers();
     when(cluster.getMemberCount()).thenReturn(0);
     when(cluster.getMember(anyString())).thenReturn(member);
 
@@ -943,8 +939,9 @@ public class PulseControllerJUnitTest {
         add(3);
       }
     };
-//    doReturn(memoryUsageTrend).when(cluster).getMemoryUsageTrend();
-    when(cluster.getStatisticTrend(Cluster.CLUSTER_STAT_MEMORY_USAGE)).thenReturn(memoryUsageTrend.toArray());
+    // doReturn(memoryUsageTrend).when(cluster).getMemoryUsageTrend();
+    when(cluster.getStatisticTrend(Cluster.CLUSTER_STAT_MEMORY_USAGE))
+        .thenReturn(memoryUsageTrend.toArray());
 
     CircularFifoBuffer writePerSecTrend = new CircularFifoBuffer() {
       {

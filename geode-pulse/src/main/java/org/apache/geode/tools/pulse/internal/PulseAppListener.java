@@ -17,13 +17,10 @@
 
 package org.apache.geode.tools.pulse.internal;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
-import java.util.function.BiFunction;
 
 import javax.servlet.ServletContext;
 
@@ -45,7 +42,6 @@ import org.apache.geode.tools.pulse.internal.data.Repository;
  * This class is used for checking the application running mode i.e. Embedded or not
  *
  * @since GemFire version 7.0.Beta 2012-09-23
- *
  */
 @Component
 public class PulseAppListener implements ApplicationListener<ApplicationEvent> {
@@ -55,24 +51,23 @@ public class PulseAppListener implements ApplicationListener<ApplicationEvent> {
   private final boolean isEmbedded;
   private final Repository repository;
   private final ResourceBundle resourceBundle;
-  private final BiFunction<String, ResourceBundle, Properties> propertiesFileLoader;
+  private final PropertiesFileLoader propertiesFileLoader;
   private final PulseController pulseController;
 
   @Autowired
-  public PulseAppListener(PulseController pulseController, Repository repository) {
+  public PulseAppListener(PulseController pulseController, Repository repository,
+      PropertiesFileLoader propertiesLoader) {
     this(Boolean.getBoolean(PulseConstants.SYSTEM_PROPERTY_PULSE_EMBEDDED),
-        PulseAppListener::loadPropertiesFromFile, pulseController, repository);
+        propertiesLoader, pulseController, repository);
   }
 
-  public PulseAppListener(boolean isEmbedded,
-      BiFunction<String, ResourceBundle, Properties> propertiesFileLoader,
-      PulseController pulseController,
-      Repository repository) {
+  public PulseAppListener(boolean isEmbedded, PropertiesFileLoader propertiesFileLoader,
+      PulseController pulseController, Repository repository) {
     this.isEmbedded = isEmbedded;
     this.propertiesFileLoader = propertiesFileLoader;
     this.pulseController = pulseController;
     this.repository = repository;
-    this.resourceBundle = repository.getResourceBundle();
+    resourceBundle = repository.getResourceBundle();
   }
 
   @Override
@@ -87,7 +82,6 @@ public class PulseAppListener implements ApplicationListener<ApplicationEvent> {
   public void contextInitialized(ContextRefreshedEvent event) {
     logger.info(resourceBundle.getString("LOG_MSG_CONTEXT_INITIALIZED"));
 
-    // Load Pulse version details
     loadPulseVersionDetails();
 
     logger.info(resourceBundle.getString("LOG_MSG_CHECK_APP_RUNNING_MODE"));
@@ -123,7 +117,7 @@ public class PulseAppListener implements ApplicationListener<ApplicationEvent> {
 
       // Load Pulse Properties
       Properties pulseProperties =
-          propertiesFileLoader.apply(PulseConstants.PULSE_PROPERTIES_FILE, resourceBundle);
+          propertiesFileLoader.loadProperties(PulseConstants.PULSE_PROPERTIES_FILE, resourceBundle);
 
       repository.setJmxUseLocator(Boolean.valueOf(
           pulseProperties.getProperty(PulseConstants.APPLICATION_PROPERTY_PULSE_USELOCATOR)));
@@ -140,7 +134,8 @@ public class PulseAppListener implements ApplicationListener<ApplicationEvent> {
 
       // load pulse security properties
       Properties pulseSecurityProperties =
-          propertiesFileLoader.apply(PulseConstants.PULSE_SECURITY_PROPERTIES_FILE, resourceBundle);
+          propertiesFileLoader
+              .loadProperties(PulseConstants.PULSE_SECURITY_PROPERTIES_FILE, resourceBundle);
 
       // set the ssl related properties found in pulsesecurity.properties
       if (!pulseSecurityProperties.isEmpty()) {
@@ -168,16 +163,14 @@ public class PulseAppListener implements ApplicationListener<ApplicationEvent> {
         (WebApplicationContext) event.getApplicationContext();
     ServletContext servletContext = applicationContext.getServletContext();
 
-
     logger.info("{}{}", resourceBundle.getString("LOG_MSG_CONTEXT_DESTROYED"),
         servletContext.getContextPath());
   }
-  // Function to load pulse version details from properties file
 
   private void loadPulseVersionDetails() {
     Properties properties =
-        propertiesFileLoader.apply(PulseConstants.PULSE_VERSION_PROPERTIES_FILE, resourceBundle);
-    // Set pulse version details in common object
+        propertiesFileLoader
+            .loadProperties(PulseConstants.PULSE_VERSION_PROPERTIES_FILE, resourceBundle);
     pulseController.getPulseVersion()
         .setPulseVersion(properties.getProperty(PulseConstants.PROPERTY_PULSE_VERSION, ""));
     pulseController.getPulseVersion()
@@ -191,20 +184,5 @@ public class PulseAppListener implements ApplicationListener<ApplicationEvent> {
     pulseController.getPulseVersion().setPulseSourceRepository(
         properties.getProperty(PulseConstants.PROPERTY_SOURCE_REPOSITORY, ""));
     logger.info(pulseController.getPulseVersion().getPulseVersionLogMessage());
-  }
-  // Function to load pulse properties from pulse.properties file
-
-  private static Properties loadPropertiesFromFile(String propertyFile,
-        ResourceBundle resourceBundle) {
-      final Properties properties = new Properties();
-    try (final InputStream stream =
-        Thread.currentThread().getContextClassLoader().getResourceAsStream(propertyFile)) {
-      logger.info(propertyFile + " " + resourceBundle.getString("LOG_MSG_FILE_FOUND"));
-      properties.load(stream);
-    } catch (IOException e) {
-      logger.error(resourceBundle.getString("LOG_MSG_EXCEPTION_LOADING_PROPERTIES_FILE"), e);
-    }
-
-    return properties;
   }
 }

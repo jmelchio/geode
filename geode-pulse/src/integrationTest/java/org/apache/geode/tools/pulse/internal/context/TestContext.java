@@ -20,12 +20,14 @@
 package org.apache.geode.tools.pulse.internal.context;
 
 import static java.util.Collections.enumeration;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.ResourceBundle;
 
 import org.springframework.context.annotation.Bean;
@@ -33,6 +35,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
+import org.apache.geode.tools.pulse.internal.PropertiesFileLoader;
+import org.apache.geode.tools.pulse.internal.data.PulseConstants;
 import org.apache.geode.tools.pulse.internal.data.Repository;
 
 @Configuration
@@ -46,6 +50,23 @@ public class TestContext {
     ResourceBundle resourceBundle = getResourceBundle();
     when(repository.getResourceBundle()).thenReturn(resourceBundle);
     return repository;
+  }
+
+  @Bean
+  @Primary
+  public PropertiesFileLoader propertiesLoader() {
+    PropertiesFileLoader propertiesFileLoader = mock(PropertiesFileLoader.class);
+    Properties properties = new Properties();
+    properties.setProperty(PulseConstants.PROPERTY_BUILD_DATE, "not empty");
+    properties.setProperty(PulseConstants.PROPERTY_BUILD_ID, "not empty");
+    properties.setProperty(PulseConstants.PROPERTY_PULSE_VERSION, "not empty");
+    properties.setProperty(PulseConstants.PROPERTY_SOURCE_DATE, "not empty");
+    properties.setProperty(PulseConstants.PROPERTY_SOURCE_REPOSITORY, "not empty");
+    properties.setProperty(PulseConstants.PROPERTY_SOURCE_REVISION, "not empty");
+
+    when(propertiesFileLoader.loadProperties(any(), any())).thenReturn(properties);
+
+    return propertiesFileLoader;
   }
 
   private ResourceBundle getResourceBundle() {

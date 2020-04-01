@@ -53,7 +53,8 @@ public class PulseAppListenerTest {
     repository = new Repository();
 
     PulseController pulseController = mock(PulseController.class);
-    appListener = new PulseAppListener(pulseController, repository);
+    appListener =
+        new PulseAppListener(pulseController, repository, new ClassPathPropertiesFileLoader());
     PulseVersion pulseVersion = new PulseVersion(repository);
     when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
 
