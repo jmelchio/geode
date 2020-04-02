@@ -35,8 +35,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 @RunWith(SpringRunner.class)
-@ContextConfiguration(locations = {"classpath*:WEB-INF/pulse-servlet.xml"},
-    loader = GenericXmlWebContextLoader.class)
+@ContextConfiguration(locations = {"classpath*:WEB-INF/pulse-servlet.xml"})
 @WebAppConfiguration
 @ActiveProfiles({"pulse.authentication.default"})
 public class DefaultSecurityConfigTest {

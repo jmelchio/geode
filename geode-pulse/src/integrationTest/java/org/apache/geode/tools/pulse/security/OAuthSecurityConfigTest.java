@@ -35,9 +35,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 @RunWith(SpringRunner.class)
-@ContextConfiguration(locations = {"classpath*:WEB-INF/pulse-servlet.xml"},
-    loader = GenericXmlWebContextLoader.class)
 @WebAppConfiguration
+@ContextConfiguration(locations = {"classpath*:WEB-INF/pulse-servlet.xml"})
 @ActiveProfiles({"pulse.authentication.oauth"})
 public class OAuthSecurityConfigTest {
   @Autowired

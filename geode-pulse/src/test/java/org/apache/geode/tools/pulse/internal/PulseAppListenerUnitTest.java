@@ -33,6 +33,7 @@ import java.util.ResourceBundle;
 
 import javax.servlet.ServletContext;
 
+import com.sun.istack.internal.NotNull;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -70,6 +71,7 @@ public class PulseAppListenerUnitTest {
 
   private ResourceBundle resourceBundle;
   private PulseVersion pulseVersion;
+  private WebApplicationContext applicationContext;
 
   @Before
   public void setUp() {
@@ -77,16 +79,16 @@ public class PulseAppListenerUnitTest {
         .thenReturn(new Properties());
     pulseVersion = new PulseVersion(repository);
 
-    WebApplicationContext applicationContext = mock(WebApplicationContext.class);
+    applicationContext = mock(WebApplicationContext.class);
     when(contextEvent.getApplicationContext()).thenReturn(applicationContext);
 
-    when(applicationContext.getServletContext()).thenReturn(servletContext);
   }
 
   @Test
   public void contextInitialized_isEmbeddedModeWithoutSslProperties_doesNotSetSslProperties() {
     resourceBundle = new StubResourceBundle();
 
+    when(applicationContext.getServletContext()).thenReturn(servletContext);
     when(repository.getResourceBundle()).thenReturn(resourceBundle);
     when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
 
@@ -103,6 +105,7 @@ public class PulseAppListenerUnitTest {
 
     Properties sslProperties = new Properties();
 
+    when(applicationContext.getServletContext()).thenReturn(servletContext);
     when(repository.getResourceBundle()).thenReturn(resourceBundle);
     when(servletContext.getAttribute("org.apache.geode.sslConfig")).thenReturn(sslProperties);
     when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
@@ -122,7 +125,7 @@ public class PulseAppListenerUnitTest {
     when(loadProperties.loadProperties(anyString(), any())).thenReturn(new Properties());
     when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
 
-    subject = new PulseAppListener(true, loadProperties, pulseController, repository);
+    subject = new PulseAppListener(false, loadProperties, pulseController, repository);
 
     subject.contextInitialized(contextEvent);
 
@@ -136,16 +139,13 @@ public class PulseAppListenerUnitTest {
     Properties sslProperties = new Properties();
     sslProperties.put("foo", "bar");
 
-    when(servletContext.getAttribute(GEODE_SSLCONFIG_SERVLET_CONTEXT_PARAM))
-        .thenReturn(sslProperties);
-
     when(repository.getResourceBundle()).thenReturn(resourceBundle);
     when(loadProperties.loadProperties(eq("pulse.properties"), any())).thenReturn(new Properties());
     when(loadProperties.loadProperties(eq("pulsesecurity.properties"), any()))
         .thenReturn(sslProperties);
     when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
 
-    subject = new PulseAppListener(true, loadProperties, pulseController, repository);
+    subject = new PulseAppListener(false, loadProperties, pulseController, repository);
 
     subject.contextInitialized(contextEvent);
 
