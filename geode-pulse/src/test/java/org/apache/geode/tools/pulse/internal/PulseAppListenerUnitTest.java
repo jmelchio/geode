@@ -21,7 +21,6 @@ import static java.util.Collections.emptyEnumeration;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,11 +45,8 @@ import org.apache.geode.tools.pulse.internal.data.PulseVersion;
 import org.apache.geode.tools.pulse.internal.data.Repository;
 
 public class PulseAppListenerUnitTest {
-
   @Rule
   public MockitoRule rule = MockitoJUnit.rule();
-
-  private PulseAppListener subject;
 
   @Mock
   private ContextRefreshedEvent contextEvent;
@@ -67,25 +63,26 @@ public class PulseAppListenerUnitTest {
   @Mock
   private PropertiesFileLoader loadProperties;
 
+  @Mock
+  private WebApplicationContext applicationContext;
+
   private ResourceBundle resourceBundle;
   private PulseVersion pulseVersion;
-  private WebApplicationContext applicationContext;
+  private PulseAppListener subject;
+
 
   @Before
   public void setUp() {
-    when(loadProperties.loadProperties(eq("GemFireVersion.properties"), any()))
-        .thenReturn(new Properties());
     pulseVersion = new PulseVersion(repository);
-
-    applicationContext = mock(WebApplicationContext.class);
-    when(contextEvent.getApplicationContext()).thenReturn(applicationContext);
-
   }
 
   @Test
   public void contextInitialized_isEmbeddedModeWithoutSslProperties_doesNotSetSslProperties() {
     resourceBundle = new StubResourceBundle();
 
+    when(loadProperties.loadProperties(eq("GemFireVersion.properties"), any()))
+        .thenReturn(new Properties());
+    when(contextEvent.getApplicationContext()).thenReturn(applicationContext);
     when(applicationContext.getServletContext()).thenReturn(servletContext);
     when(repository.getResourceBundle()).thenReturn(resourceBundle);
     when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
@@ -103,7 +100,10 @@ public class PulseAppListenerUnitTest {
 
     Properties sslProperties = new Properties();
 
+    when(contextEvent.getApplicationContext()).thenReturn(applicationContext);
     when(applicationContext.getServletContext()).thenReturn(servletContext);
+    when(loadProperties.loadProperties(eq("GemFireVersion.properties"), any()))
+        .thenReturn(new Properties());
     when(repository.getResourceBundle()).thenReturn(resourceBundle);
     when(servletContext.getAttribute("org.apache.geode.sslConfig")).thenReturn(sslProperties);
     when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
@@ -141,6 +141,8 @@ public class PulseAppListenerUnitTest {
     when(loadProperties.loadProperties(eq("pulse.properties"), any())).thenReturn(new Properties());
     when(loadProperties.loadProperties(eq("pulsesecurity.properties"), any()))
         .thenReturn(sslProperties);
+    when(loadProperties.loadProperties(eq("GemFireVersion.properties"), any()))
+        .thenReturn(new Properties());
     when(pulseController.getPulseVersion()).thenReturn(pulseVersion);
 
     subject = new PulseAppListener(false, loadProperties, pulseController, repository);

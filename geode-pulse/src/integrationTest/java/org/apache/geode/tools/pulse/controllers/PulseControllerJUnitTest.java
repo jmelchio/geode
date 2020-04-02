@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.quality.Strictness.LENIENT;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.parseMediaType;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -93,7 +94,7 @@ public class PulseControllerJUnitTest {
   public TemporaryFolder tempFolder = new TemporaryFolder();
 
   @Rule
-  public MockitoRule mockitoRule = MockitoJUnit.rule();
+  public MockitoRule mockitoRule = MockitoJUnit.rule().strictness(LENIENT);
 
   @Autowired
   private WebApplicationContext wac;

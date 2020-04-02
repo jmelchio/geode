@@ -50,6 +50,8 @@ public class LogoutHandlerTest {
   private HttpServletResponse response;
   @Mock
   private Repository repository;
+  @Mock
+  private ApplicationContext applicationContext;
 
   private final LogoutHandler handler = new LogoutHandler(EXPECTED_REDIRECT_URL);
 
@@ -57,10 +59,6 @@ public class LogoutHandlerTest {
   public void setup() {
     when(request.getContextPath()).thenReturn("");
     when(response.encodeRedirectURL(EXPECTED_REDIRECT_URL)).thenReturn(EXPECTED_REDIRECT_URL);
-
-    ApplicationContext applicationContext = mock(ApplicationContext.class);
-    when(applicationContext.getBean("repository", Repository.class)).thenReturn(repository);
-
     handler.setApplicationContext(applicationContext);
   }
 
@@ -70,6 +68,7 @@ public class LogoutHandlerTest {
 
     Authentication authentication = mock(Authentication.class);
     when(authentication.getName()).thenReturn(authenticatedUser);
+    when(applicationContext.getBean("repository", Repository.class)).thenReturn(repository);
 
     handler.onLogoutSuccess(request, response, authentication);
 
@@ -78,6 +77,7 @@ public class LogoutHandlerTest {
 
   @Test
   public void onLogoutSuccess_redirectsToSpecifiedUrl() throws Exception {
+    when(applicationContext.getBean("repository", Repository.class)).thenReturn(repository);
     handler.onLogoutSuccess(request, response, mock(Authentication.class));
 
     verify(response).sendRedirect(EXPECTED_REDIRECT_URL);
