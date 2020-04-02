@@ -16,6 +16,7 @@ package org.apache.geode.tools.pulse.controllers;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import static org.apache.geode.tools.pulse.internal.data.Cluster.CLUSTER_STAT_GARBAGE_COLLECTION;
 import static org.apache.geode.tools.pulse.internal.data.Cluster.CLUSTER_STAT_MEMORY_USAGE;
 import static org.apache.geode.tools.pulse.internal.data.Cluster.CLUSTER_STAT_THROUGHPUT_READS;
 import static org.apache.geode.tools.pulse.internal.data.Cluster.CLUSTER_STAT_THROUGHPUT_WRITES;
@@ -864,6 +865,18 @@ public class PulseControllerJUnitTest {
   }
 
   private void prepareCluster() {
+    when(cluster.getAlertsList()).thenReturn(array());
+    when(cluster.getStatements()).thenReturn(array());
+    when(cluster.getConnectionErrorMsg()).thenReturn("");
+    when(cluster.getServerName()).thenReturn(CLUSTER_NAME);
+
+    when(cluster.getStatisticTrend(CLUSTER_STAT_MEMORY_USAGE)).thenReturn(array(1, 2, 3));
+    when(cluster.getStatisticTrend(CLUSTER_STAT_THROUGHPUT_READS)).thenReturn(array(1, 2, 3));
+    when(cluster.getStatisticTrend(CLUSTER_STAT_THROUGHPUT_WRITES)).thenReturn(array(4, 5, 6));
+    when(cluster.getStatisticTrend(CLUSTER_STAT_GARBAGE_COLLECTION)).thenReturn(array());
+    when(cluster.getGarbageCollectionCount()).thenReturn(0L);
+    when(cluster.getNotificationPageNumber()).thenReturn(1);
+
     Cluster.RegionOnMember regionOnMember = new Cluster.RegionOnMember();
     regionOnMember.setRegionFullPath(REGION_PATH);
     regionOnMember.setMemberName(MEMBER_NAME);
@@ -915,15 +928,6 @@ public class PulseControllerJUnitTest {
     when(cluster.getMember(anyString())).thenReturn(member);
 
     List<Cluster.Member> members = singletonList(member);
-
     when(cluster.getPhysicalToMember()).thenReturn(singletonMap(PHYSICAL_HOST_NAME, members));
-
-    when(cluster.getServerName()).thenReturn(CLUSTER_NAME);
-    when(cluster.getStatisticTrend(CLUSTER_STAT_MEMORY_USAGE)).thenReturn(array(1, 2, 3));
-    when(cluster.getStatisticTrend(CLUSTER_STAT_THROUGHPUT_READS)).thenReturn(array(1, 2, 3));
-    when(cluster.getStatisticTrend(CLUSTER_STAT_THROUGHPUT_WRITES)).thenReturn(array(4, 5, 6));
-    when(cluster.getAlertsList()).thenReturn(array());
-    when(cluster.getStatements()).thenReturn(array());
-    when(cluster.getConnectionErrorMsg()).thenReturn("");
   }
 }
