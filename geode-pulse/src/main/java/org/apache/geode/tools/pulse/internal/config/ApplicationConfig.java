@@ -28,15 +28,15 @@ import org.apache.geode.tools.pulse.internal.data.Repository;
 
 @Configuration
 public class ApplicationConfig {
-  @Bean
+  @Bean(name = "repository")
   @Profile({"pulse.authentication.default", "pulse.authentication.gemfire"})
-  public Repository repository() {
+  public Repository defaultRepository() {
     return new Repository();
   }
 
-  @Bean
+  @Bean(name = "repository")
   @Profile("pulse.authentication.oauth")
-  public Repository repository(OAuth2AuthorizedClientService authorizedClientService) {
+  public Repository oauthRepository(OAuth2AuthorizedClientService authorizedClientService) {
     return new Repository(authorizedClientService);
   }
 }

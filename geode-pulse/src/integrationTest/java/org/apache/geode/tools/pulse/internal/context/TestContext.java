@@ -32,7 +32,6 @@ import java.util.ResourceBundle;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 import org.apache.geode.tools.pulse.internal.PropertiesFileLoader;
@@ -44,7 +43,6 @@ import org.apache.geode.tools.pulse.internal.data.Repository;
 public class TestContext {
 
   @Bean
-  @Primary
   public Repository repository() {
     Repository repository = mock(Repository.class);
     ResourceBundle resourceBundle = getResourceBundle();
@@ -53,7 +51,6 @@ public class TestContext {
   }
 
   @Bean
-  @Primary
   public PropertiesFileLoader propertiesLoader() {
     PropertiesFileLoader propertiesFileLoader = mock(PropertiesFileLoader.class);
     Properties properties = new Properties();

@@ -18,7 +18,6 @@
 package org.apache.geode.tools.pulse.internal;
 
 import static java.util.Collections.emptyEnumeration;
-import static org.apache.geode.cache.internal.HttpService.GEODE_SSLCONFIG_SERVLET_CONTEXT_PARAM;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -33,7 +32,6 @@ import java.util.ResourceBundle;
 
 import javax.servlet.ServletContext;
 
-import com.sun.istack.internal.NotNull;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
