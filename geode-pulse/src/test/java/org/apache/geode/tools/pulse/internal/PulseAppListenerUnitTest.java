@@ -18,6 +18,7 @@
 package org.apache.geode.tools.pulse.internal;
 
 import static java.util.Collections.emptyEnumeration;
+import static org.apache.geode.cache.internal.HttpService.GEODE_SSLCONFIG_SERVLET_CONTEXT_PARAM;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -135,6 +136,9 @@ public class PulseAppListenerUnitTest {
     Properties sslProperties = new Properties();
     sslProperties.put("foo", "bar");
 
+    when(servletContext.getAttribute(GEODE_SSLCONFIG_SERVLET_CONTEXT_PARAM))
+        .thenReturn(sslProperties);
+
     when(repository.getResourceBundle()).thenReturn(resourceBundle);
     when(loadProperties.loadProperties(eq("pulse.properties"), any())).thenReturn(new Properties());
     when(loadProperties.loadProperties(eq("pulsesecurity.properties"), any()))
@@ -148,8 +152,7 @@ public class PulseAppListenerUnitTest {
     verify(repository).setJavaSslProperties(sslProperties);
   }
 
-  class StubResourceBundle extends ResourceBundle {
-
+  static class StubResourceBundle extends ResourceBundle {
     @Override
     protected Object handleGetObject(String key) {
       return "the same string";
