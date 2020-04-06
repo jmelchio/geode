@@ -34,9 +34,21 @@ public class ApplicationConfig {
     return new Repository();
   }
 
+  @Bean(name = "logoutTargetURL")
+  @Profile({"pulse.authentication.default", "pulse.authentication.gemfire"})
+  public String defaultLogoutTargetURL() {
+    return "/login.html";
+  }
+
   @Bean(name = "repository")
   @Profile("pulse.authentication.oauth")
   public Repository oauthRepository(OAuth2AuthorizedClientService authorizedClientService) {
     return new Repository(authorizedClientService);
+  }
+
+  @Bean(name = "logoutTargetURL")
+  @Profile({"pulse.authentication.oauth"})
+  public String oauthLogoutTargetURL() {
+    return "/login";
   }
 }

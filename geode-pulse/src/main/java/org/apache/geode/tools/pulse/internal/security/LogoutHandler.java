@@ -44,12 +44,8 @@ public class LogoutHandler extends SimpleUrlLogoutSuccessHandler implements Logo
   private ApplicationContext applicationContext;
 
   @Autowired
-  public LogoutHandler() {
-    this("/login.html");
-  }
-
-  public LogoutHandler(String targetUrl) {
-    setDefaultTargetUrl(targetUrl);
+  public LogoutHandler(String logoutTargetURL) {
+    setDefaultTargetUrl(logoutTargetURL);
   }
 
   @Override

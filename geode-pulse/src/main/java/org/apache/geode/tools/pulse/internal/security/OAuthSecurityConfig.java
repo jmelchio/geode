@@ -15,8 +15,8 @@
 
 package org.apache.geode.tools.pulse.internal.security;
 
-import static org.springframework.security.config.Customizer.withDefaults;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,6 +34,7 @@ import org.springframework.security.oauth2.client.registration.InMemoryClientReg
 import org.springframework.security.oauth2.client.web.AuthenticatedPrincipalOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 
 
 @Configuration
@@ -59,14 +60,30 @@ public class OAuthSecurityConfig extends WebSecurityConfigurerAdapter {
   @Value("${pulse.oauth.userNameAttributeName}")
   private String userNameAttributeName;
 
+  private final LogoutSuccessHandler logoutHandler;
+
+  @Autowired
+  public OAuthSecurityConfig(LogoutSuccessHandler logoutHandler) {
+    this.logoutHandler = logoutHandler;
+  }
+
   @Override
   protected void configure(HttpSecurity http) throws Exception {
     http.authorizeRequests(authorize -> authorize
+        // .mvcMatchers("/login.html", "/authenticateUser", "/pulseVersion", "/scripts/**",
+        // "/images/**", "/css/**", "/properties/**")
+        // .permitAll()
+        // .mvcMatchers("/dataBrowser*", "/getQueryStatisticsGridModel*")
+        // .access("hasRole('CLUSTER:READ') and hasRole('DATA:READ')")
+        // .mvcMatchers("/*")
+        // .hasRole("CLUSTER:READ")
         .anyRequest().authenticated())
-        .oauth2Login(withDefaults())
+        .oauth2Login(oauth -> oauth.defaultSuccessUrl("/clusterDetail.html", true))
         .exceptionHandling(exception -> exception
             .accessDeniedPage("/accessDenied.html"))
-        .logout(logout -> logout.logoutUrl("/clusterLogout"))
+        .logout(logout -> logout
+            .logoutUrl("/clusterLogout")
+            .logoutSuccessHandler(logoutHandler))
         .headers(header -> header
             .frameOptions().deny()
             .xssProtection(xss -> xss
