@@ -27,17 +27,20 @@ import java.util.ResourceBundle;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.stereotype.Component;
 
 /**
  * A Singleton instance of the memory cache for clusters.
  *
  * @since GemFire version 7.0.Beta 2012-09-23
  */
+@Component
 public class Repository {
   private static final Logger logger = LogManager.getLogger();
 
@@ -62,7 +65,10 @@ public class Repository {
     this(null);
   }
 
-  public Repository(OAuth2AuthorizedClientService authorizedClientService) {
+  // The authorizedClientService is required only when using OAuth2 security.
+  @Autowired
+  public Repository(
+      @Autowired(required = false) OAuth2AuthorizedClientService authorizedClientService) {
     this.authorizedClientService = authorizedClientService;
   }
 
@@ -128,8 +134,9 @@ public class Repository {
    */
   public Cluster getCluster() {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    if (auth == null)
+    if (auth == null) {
       return null;
+    }
 
     if (auth instanceof OAuth2AuthenticationToken) {
       OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) auth;

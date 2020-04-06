@@ -15,8 +15,6 @@
 
 package org.apache.geode.tools.pulse.internal.security;
 
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,7 +33,6 @@ import org.springframework.security.oauth2.client.web.AuthenticatedPrincipalOAut
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
-
 
 @Configuration
 @EnableWebSecurity
@@ -60,11 +57,9 @@ public class OAuthSecurityConfig extends WebSecurityConfigurerAdapter {
   @Value("${pulse.oauth.userNameAttributeName}")
   private String userNameAttributeName;
 
-  private final LogoutSuccessHandler logoutHandler;
-
-  @Autowired
-  public OAuthSecurityConfig(LogoutSuccessHandler logoutHandler) {
-    this.logoutHandler = logoutHandler;
+  @Bean
+  public LogoutSuccessHandler logoutHandler() {
+    return new LogoutHandler("/login");
   }
 
   @Override
@@ -83,7 +78,7 @@ public class OAuthSecurityConfig extends WebSecurityConfigurerAdapter {
             .accessDeniedPage("/accessDenied.html"))
         .logout(logout -> logout
             .logoutUrl("/clusterLogout")
-            .logoutSuccessHandler(logoutHandler))
+            .logoutSuccessHandler(logoutHandler()))
         .headers(header -> header
             .frameOptions().deny()
             .xssProtection(xss -> xss
