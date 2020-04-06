@@ -29,13 +29,15 @@ import org.apache.geode.tools.pulse.internal.data.Repository;
 @Configuration
 public class ApplicationConfig {
   @Bean(name = "repository")
-  @Profile({"pulse.authentication.default", "pulse.authentication.gemfire"})
+  @Profile({"pulse.authentication.default", "pulse.authentication.gemfire",
+      "pulse.authentication.custom"})
   public Repository defaultRepository() {
     return new Repository();
   }
 
   @Bean(name = "logoutTargetURL")
-  @Profile({"pulse.authentication.default", "pulse.authentication.gemfire"})
+  @Profile({"pulse.authentication.default", "pulse.authentication.gemfire",
+      "pulse.authentication.custom"})
   public String defaultLogoutTargetURL() {
     return "/login.html";
   }

@@ -50,6 +50,11 @@ public class TestContext {
     return repository;
   }
 
+  @Bean(name = "logoutTargetURL")
+  public String defaultLogoutTargetURL() {
+    return "/login.html";
+  }
+
   @Bean
   public PropertiesFileLoader propertiesLoader() {
     PropertiesFileLoader propertiesFileLoader = mock(PropertiesFileLoader.class);
