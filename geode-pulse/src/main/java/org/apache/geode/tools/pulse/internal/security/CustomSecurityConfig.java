@@ -33,11 +33,6 @@ import org.apache.geode.tools.pulse.internal.data.Repository;
 @Profile("pulse.authentication.custom")
 @ImportResource("classpath:pulse-authentication-custom.xml")
 public class CustomSecurityConfig extends DefaultSecurityConfig {
-  @Bean
-  public Repository repository() {
-    return new Repository();
-  }
-
   // the pulse-authentication-custom.xml should configure an <authentication-manager>
   @Autowired
   private AuthenticationManager authenticationManager;
