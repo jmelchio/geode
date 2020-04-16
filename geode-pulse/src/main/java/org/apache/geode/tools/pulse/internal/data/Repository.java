@@ -17,6 +17,7 @@
 
 package org.apache.geode.tools.pulse.internal.data;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
@@ -28,14 +29,20 @@ import java.util.ResourceBundle;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.endpoint.DefaultRefreshTokenTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.OAuth2RefreshTokenGrantRequest;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.endpoint.OAuth2AccessTokenResponse;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * A Singleton instance of the memory cache for clusters.
@@ -155,6 +162,13 @@ public class Repository {
       OAuth2User authenticatedPrincipal = authenticationToken.getPrincipal();
       String authenticatedPrincipalName = authenticatedPrincipal.getName();
       OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
+      if (accessToken.getExpiresAt().getEpochSecond() < Instant.now().getEpochSecond()) {
+        // need to refresh the access token
+        DefaultRefreshTokenTokenResponseClient responseClient = new DefaultRefreshTokenTokenResponseClient();
+        OAuth2RefreshTokenGrantRequest
+            oAuth2RefreshTokenGrantRequest = new OAuth2RefreshTokenGrantRequest(authorizedClient.getClientRegistration(), accessToken, authorizedClient.getRefreshToken());
+        OAuth2AccessTokenResponse tokenResponse = responseClient.getTokenResponse(oAuth2RefreshTokenGrantRequest);
+      }
       String accessTokenValue = accessToken.getTokenValue();
       return getClusterWithCredentials(authenticatedPrincipalName, accessTokenValue);
     }
