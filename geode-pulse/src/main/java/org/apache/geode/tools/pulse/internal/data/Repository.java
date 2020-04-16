@@ -176,6 +176,12 @@ public class Repository {
             authorizedClient.getClientRegistration(), authenticationToken.getPrincipal().getName(),
             accessToken, tokenResponse.getRefreshToken());
         authorizedClientService.saveAuthorizedClient(refreshedOAuth2Client, authenticationToken);
+        synchronized (clusterMap) {
+          Cluster data = clusterMap.get(authenticatedPrincipalName);
+          if (data != null) {
+            data.reconnectToGemFire(accessToken.getTokenValue());
+          }
+        }
       }
       String accessTokenValue = accessToken.getTokenValue();
       return getClusterWithCredentials(authenticatedPrincipalName, accessTokenValue);
