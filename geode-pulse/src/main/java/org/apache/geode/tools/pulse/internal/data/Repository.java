@@ -21,12 +21,11 @@ import static java.time.Instant.now;
 
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,6 +38,9 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.client.endpoint.DefaultRefreshTokenTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.OAuth2RefreshTokenGrantRequest;
 import org.springframework.security.oauth2.core.AbstractOAuth2Token;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2AuthorizationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AccessTokenResponse;
 import org.springframework.stereotype.Component;
@@ -89,7 +91,7 @@ public class Repository {
   /**
    * this will return a cluster already connected to the geode jmx manager for the user in the
    * request
-   *
+   * <p>
    * But for multi-user connections to gemfireJMX, i.e pulse that uses gemfire integrated security,
    * we will need to get the username from the context
    */
@@ -167,15 +169,13 @@ public class Repository {
   }
 
   public void removeAllClusters() {
-    Iterator<Map.Entry<String, Cluster>> iter = clusterMap.entrySet().iterator();
+    Set<String> keySet = clusterMap.keySet();
 
-    while (iter.hasNext()) {
-      Map.Entry<String, Cluster> entry = iter.next();
-      Cluster c = entry.getValue();
-      String clusterKey = entry.getKey();
+    for (String key : keySet) {
+      Cluster c = clusterMap.get(key);
       c.stopThread();
-      iter.remove();
-      logger.info("{} : {}", resourceBundle.getString("LOG_MSG_REMOVE_THREAD"), clusterKey);
+      clusterMap.remove(key);
+      logger.info("{} : {}", resourceBundle.getString("LOG_MSG_REMOVE_THREAD"), key);
     }
   }
 
@@ -244,21 +244,23 @@ public class Repository {
     // and remove the user's cluster from the repository.
     if (refreshToken == null || isExpired(refreshToken)) {
       logoutUser(staleClient.getPrincipalName());
-      authentication.setAuthenticated(false);
-      return null;
+      // authentication.setAuthenticated(false);
+      // SecurityContextHolder.getContext().setAuthentication(authentication);
+      throw new OAuth2AuthenticationException(new OAuth2Error("401"),
+          "Refresh token not found or expired");
     }
 
-    OAuth2AuthorizedClient freshClient = refreshClient(staleClient);
-    authorizedClientService.saveAuthorizedClient(freshClient, authentication);
-
-    // TODO: Find out whether the access token can be null. See the comment in refreshClient().
-    if (freshClient.getAccessToken() == null) {
+    try {
+      OAuth2AuthorizedClient freshClient = refreshClient(staleClient);
+      authorizedClientService.saveAuthorizedClient(freshClient, authentication);
+      return freshClient;
+    } catch (OAuth2AuthenticationException | OAuth2AuthorizationException e) {
       logoutUser(staleClient.getPrincipalName());
-      authentication.setAuthenticated(false);
-      return null;
+      // authentication.setAuthenticated(false);
+      // SecurityContextHolder.getContext().setAuthentication(authentication);
+      throw e;
     }
 
-    return freshClient;
   }
 
   private OAuth2AuthorizedClient getAuthorizedClient(
@@ -273,10 +275,9 @@ public class Repository {
         staleClient.getAccessToken(),
         staleClient.getRefreshToken());
 
-    OAuth2AccessTokenResponse refreshResponse = new DefaultRefreshTokenTokenResponseClient()
-        // As far as I can tell from reading getTokenResponse(), the response will always contain
-        // an access token. So I'm not sure how to know whether the refresh request was granted.
-        // Maybe it throws an exception if the request was denied?
+    OAuth2AccessTokenResponse refreshResponse = null;
+
+    refreshResponse = new DefaultRefreshTokenTokenResponseClient()
         .getTokenResponse(refreshRequest);
 
     return new OAuth2AuthorizedClient(

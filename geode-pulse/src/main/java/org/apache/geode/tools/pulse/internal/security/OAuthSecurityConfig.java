@@ -44,7 +44,8 @@ public class OAuthSecurityConfig extends WebSecurityConfigurerAdapter {
   @Override
   protected void configure(HttpSecurity http) throws Exception {
     http.authorizeRequests(authorize -> authorize
-        .mvcMatchers("/pulseVersion", "/scripts/**", "/images/**", "/css/**", "/properties/**")
+        .mvcMatchers("/pulseVersion", "/scripts/**", "/images/**", "/css/**",
+            "/properties/**")
         .permitAll()
         .mvcMatchers("/dataBrowser*", "/getQueryStatisticsGridModel*")
         .access("hasAuthority('SCOPE_CLUSTER:READ') and hasAuthority('SCOPE_DATA:READ')")
