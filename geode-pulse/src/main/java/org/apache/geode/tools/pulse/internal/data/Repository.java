@@ -109,55 +109,51 @@ public class Repository {
   }
 
   public Cluster getClusterWithUserNameAndPassword(String userName, String password) {
-    return getClusterWithCredentials(userName, new String[] {userName, password});
+    String[] credentials = {userName, password};
+    return getClusterWithCredentials(userName, credentials);
   }
 
-  public Cluster getClusterWithCredentials(String username, Object credentials) {
+  public Cluster getClusterWithCredentials(String userName, Object credentials) {
     synchronized (clusterMap) {
-      Cluster cluster = clusterMap.get(username);
+      Cluster cluster = clusterMap.get(userName);
       if (cluster == null) {
-        logger.info(resourceBundle.getString("LOG_MSG_CREATE_NEW_THREAD") + " : " + username);
-        cluster = clusterFactory.create(host, port, username, resourceBundle, this);
+        logger.info(resourceBundle.getString("LOG_MSG_CREATE_NEW_THREAD") + " : " + userName);
+        cluster = clusterFactory.create(host, port, userName, resourceBundle, this);
         // Assign name to thread created
-        cluster.setName(PulseConstants.APP_NAME + "-" + host + ":" + port + ":" + username);
+        cluster.setName(PulseConstants.APP_NAME + "-" + host + ":" + port + ":" + userName);
         cluster.connectToGemFire(credentials);
         if (cluster.isConnectedFlag()) {
-          clusterMap.put(username, cluster);
+          clusterMap.put(userName, cluster);
         }
       }
       return cluster;
     }
   }
 
+  /**
+   * Returns the cluster for the user associated with the given authentication. If the user's
+   * access token is expired, it is refreshed and the cluster is reconnected to JMX using the fresh
+   * token. If the refresh fails, the user's cluster is disconnected from JMX and removed from the
+   * repository.
+   */
   private Cluster getClusterWithAuthenticationToken(OAuth2AuthenticationToken authentication) {
     OAuth2AuthorizedClient authorizedClient = getAuthorizedClient(authentication);
 
-    if (!isExpired(authorizedClient.getAccessToken())) {
-      return getClusterWithAuthorizedClient(authorizedClient);
+    if (isExpired(authorizedClient.getAccessToken())) {
+      return reconnectedClusterForExpiredClient(authentication, authorizedClient);
     }
 
-    OAuth2AuthorizedClient freshClient = handleExpiration(authentication, authorizedClient);
-
-    if (freshClient == null) {
-      return null;
-    }
-
-    synchronized (clusterMap) {
-      Cluster cluster = clusterMap.get(freshClient.getPrincipalName());
-      if (cluster != null) {
-        cluster.reconnectToGemFire(freshClient.getAccessToken().getTokenValue());
-      }
-      return cluster;
-    }
+    return getClusterWithAuthorizedClient(authorizedClient);
   }
 
   private Cluster getClusterWithAuthorizedClient(OAuth2AuthorizedClient authorizedClient) {
-    return getClusterWithCredentials(authorizedClient.getPrincipalName(),
-        authorizedClient.getAccessToken().getTokenValue());
+    String userName = authorizedClient.getPrincipalName();
+    String credentials = authorizedClient.getAccessToken().getTokenValue();
+    return getClusterWithCredentials(userName, credentials);
   }
 
-  public void logoutUser(String username) {
-    Cluster cluster = clusterMap.remove(username);
+  public void logoutUser(String userName) {
+    Cluster cluster = clusterMap.remove(userName);
     if (cluster != null) {
       try {
         cluster.setStopUpdates(true);
@@ -236,57 +232,69 @@ public class Repository {
     return resourceBundle;
   }
 
-  private OAuth2AuthorizedClient handleExpiration(Authentication authentication,
-      OAuth2AuthorizedClient staleClient) {
-    OAuth2RefreshToken refreshToken = staleClient.getRefreshToken();
-
-    // If the refresh token is missing or expired, invalidate the current user's authentication
-    // and remove the user's cluster from the repository.
-    if (refreshToken == null || isExpired(refreshToken)) {
-      logoutUser(staleClient.getPrincipalName());
-      // authentication.setAuthenticated(false);
-      // SecurityContextHolder.getContext().setAuthentication(authentication);
-      throw new OAuth2AuthenticationException(new OAuth2Error("401"),
-          "Refresh token not found or expired");
-    }
-
-    try {
-      OAuth2AuthorizedClient freshClient = refreshClient(staleClient);
-      authorizedClientService.saveAuthorizedClient(freshClient, authentication);
-      return freshClient;
-    } catch (OAuth2AuthenticationException | OAuth2AuthorizationException e) {
-      logoutUser(staleClient.getPrincipalName());
-      // authentication.setAuthenticated(false);
-      // SecurityContextHolder.getContext().setAuthentication(authentication);
-      throw e;
-    }
-
-  }
-
   private OAuth2AuthorizedClient getAuthorizedClient(
       OAuth2AuthenticationToken authenticationToken) {
     return authorizedClientService.loadAuthorizedClient(
         authenticationToken.getAuthorizedClientRegistrationId(), authenticationToken.getName());
   }
 
-  private static OAuth2AuthorizedClient refreshClient(OAuth2AuthorizedClient staleClient) {
-    OAuth2RefreshTokenGrantRequest refreshRequest = new OAuth2RefreshTokenGrantRequest(
-        staleClient.getClientRegistration(),
-        staleClient.getAccessToken(),
-        staleClient.getRefreshToken());
-
-    OAuth2AccessTokenResponse refreshResponse = null;
-
-    refreshResponse = new DefaultRefreshTokenTokenResponseClient()
-        .getTokenResponse(refreshRequest);
-
-    return new OAuth2AuthorizedClient(
-        staleClient.getClientRegistration(), staleClient.getPrincipalName(),
-        refreshResponse.getAccessToken(), refreshResponse.getRefreshToken());
-  }
-
   private static boolean isExpired(AbstractOAuth2Token token) {
     Instant tokenExpiration = token.getExpiresAt();
-    return tokenExpiration != null && now().isAfter(tokenExpiration);
+    return tokenExpiration != null && tokenExpiration.isBefore(now());
+  }
+
+  private OAuth2AuthorizedClient refreshExpiredClient(Authentication authentication,
+      OAuth2AuthorizedClient expiredClient) {
+
+    OAuth2RefreshToken refreshToken = expiredClient.getRefreshToken();
+    if (refreshToken == null || isExpired(refreshToken)) {
+      throw new OAuth2AuthenticationException(new OAuth2Error("401"),
+          "Refresh token absent or expired");
+    }
+
+    OAuth2AccessTokenResponse freshToken = getFreshToken(expiredClient);
+
+    OAuth2AuthorizedClient freshClient = new OAuth2AuthorizedClient(
+        expiredClient.getClientRegistration(), expiredClient.getPrincipalName(),
+        freshToken.getAccessToken(), freshToken.getRefreshToken());
+
+    authorizedClientService.saveAuthorizedClient(freshClient, authentication);
+
+    return freshClient;
+  }
+
+  /**
+   * Refreshes the expired client's access token, reconnects the associated user's cluster using
+   * the new token, and returns the reconnected cluster. If the access token cannot be refreshed,
+   * the user's cluster is disconnected from JMX and removed from the repository.
+   */
+  private Cluster reconnectedClusterForExpiredClient(OAuth2AuthenticationToken authentication,
+      OAuth2AuthorizedClient expiredClient) {
+
+    OAuth2AuthorizedClient freshClient;
+    try {
+      freshClient = refreshExpiredClient(authentication, expiredClient);
+    } catch (OAuth2AuthenticationException | OAuth2AuthorizationException authException) {
+      logoutUser(expiredClient.getPrincipalName());
+      throw authException;
+    }
+
+    synchronized (clusterMap) {
+      Cluster cluster = clusterMap.get(freshClient.getPrincipalName());
+      if (cluster != null) {
+        cluster.reconnectToGemFire(freshClient.getAccessToken().getTokenValue());
+      }
+      return cluster;
+    }
+  }
+
+  private static OAuth2AccessTokenResponse getFreshToken(OAuth2AuthorizedClient expiredClient) {
+    OAuth2RefreshTokenGrantRequest refreshRequest = new OAuth2RefreshTokenGrantRequest(
+        expiredClient.getClientRegistration(),
+        expiredClient.getAccessToken(),
+        expiredClient.getRefreshToken());
+
+    return new DefaultRefreshTokenTokenResponseClient()
+        .getTokenResponse(refreshRequest);
   }
 }

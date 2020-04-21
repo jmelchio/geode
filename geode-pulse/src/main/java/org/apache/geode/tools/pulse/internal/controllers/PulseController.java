@@ -109,14 +109,10 @@ public class PulseController {
         try {
           PulseService pulseService = pulseServiceFactory.getPulseServiceInstance(serviceName);
           responseMap.set(serviceName, pulseService.execute(request));
-        } catch (OAuth2AuthenticationException | OAuth2AuthorizationException oauthException) {
-          logger.warn("serviceException [for service {}] = {}", serviceName,
-              oauthException.getMessage());
-          responseMap = mapper.createObjectNode();
-          responseMap.put("error", "tokenExpired");
-          responseMap.put("redirect", "/pulse/clusterLogout");
+        } catch (OAuth2AuthenticationException | OAuth2AuthorizationException e) {
+          logger.warn("serviceException [for service {}] = {}", serviceName, e.getMessage());
           response.setStatus(HttpStatus.UNAUTHORIZED.value());
-          break;
+          return;
         } catch (Exception serviceException) {
           logger.warn("serviceException [for service {}] = {}", serviceName,
               serviceException.getMessage());
