@@ -26,24 +26,23 @@ import org.apache.geode.management.runtime.DiskStoreInfo;
 public class DiskStore extends GroupableConfiguration<DiskStoreInfo> {
   public static final String DISK_STORE_CONFIG_ENDPOINT = "/diskstores";
 
-  private String id;
   private String name;
-  private String compactionThreshold;
-  private String diskUsageCriticalPercentage;
-  private String diskUsageWarningPercentage;
-  private String maxOplogSize;
-  private String queueSize;
-  private String timeInterval;
-  private String writeBufferSize;
+  private Integer compactionThreshold;
+  private Float diskUsageCriticalPercentage;
+  private Float diskUsageWarningPercentage;
+  private Long maxOplogSizeInBytes;
+  private Integer queueSize;
+  private Long timeInterval;
+  private Integer writeBufferSize;
   private List<DiskDir> directories;
-  private boolean allowForceCompaction;
-  private boolean autoCompact;
+  private Boolean allowForceCompaction;
+  private Boolean autoCompact;
 
-  public boolean isAutoCompact() {
+  public Boolean isAutoCompact() {
     return autoCompact;
   }
 
-  public void setAutoCompact(boolean autoCompact) {
+  public void setAutoCompact(Boolean autoCompact) {
     this.autoCompact = autoCompact;
   }
 
@@ -66,74 +65,70 @@ public class DiskStore extends GroupableConfiguration<DiskStoreInfo> {
 
   @Override
   public String getId() {
-    return id;
+    return name;
   }
 
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  public String getCompactionThreshold() {
+  public Integer getCompactionThreshold() {
     return compactionThreshold;
   }
 
-  public void setCompactionThreshold(String compactionThreshold) {
+  public void setCompactionThreshold(Integer compactionThreshold) {
     this.compactionThreshold = compactionThreshold;
   }
 
-  public String getDiskUsageCriticalPercentage() {
+  public Float getDiskUsageCriticalPercentage() {
     return diskUsageCriticalPercentage;
   }
 
-  public void setDiskUsageCriticalPercentage(String diskUsageCriticalPercentage) {
+  public void setDiskUsageCriticalPercentage(Float diskUsageCriticalPercentage) {
     this.diskUsageCriticalPercentage = diskUsageCriticalPercentage;
   }
 
-  public String getDiskUsageWarningPercentage() {
+  public Float getDiskUsageWarningPercentage() {
     return diskUsageWarningPercentage;
   }
 
-  public void setDiskUsageWarningPercentage(String diskUsageWarningPercentage) {
+  public void setDiskUsageWarningPercentage(Float diskUsageWarningPercentage) {
     this.diskUsageWarningPercentage = diskUsageWarningPercentage;
   }
 
-  public String getMaxOplogSize() {
-    return maxOplogSize;
+  public Long getMaxOplogSizeInBytes() {
+    return maxOplogSizeInBytes;
   }
 
-  public void setMaxOplogSize(String maxOplogSize) {
-    this.maxOplogSize = maxOplogSize;
+  public void setMaxOplogSizeInBytes(Long maxOplogSize) {
+    this.maxOplogSizeInBytes = maxOplogSize;
   }
 
-  public String getQueueSize() {
+  public Integer getQueueSize() {
     return queueSize;
   }
 
-  public void setQueueSize(String queueSize) {
+  public void setQueueSize(Integer queueSize) {
     this.queueSize = queueSize;
   }
 
-  public String getTimeInterval() {
+  public Long getTimeInterval() {
     return timeInterval;
   }
 
-  public void setTimeInterval(String timeInterval) {
+  public void setTimeInterval(Long timeInterval) {
     this.timeInterval = timeInterval;
   }
 
-  public String getWriteBufferSize() {
+  public Integer getWriteBufferSize() {
     return writeBufferSize;
   }
 
-  public void setWriteBufferSize(String writeBufferSize) {
+  public void setWriteBufferSize(Integer writeBufferSize) {
     this.writeBufferSize = writeBufferSize;
   }
 
-  public boolean isAllowForceCompaction() {
+  public Boolean isAllowForceCompaction() {
     return allowForceCompaction;
   }
 
-  public void setAllowForceCompaction(boolean allowForceCompaction) {
+  public void setAllowForceCompaction(Boolean allowForceCompaction) {
     this.allowForceCompaction = allowForceCompaction;
   }
 

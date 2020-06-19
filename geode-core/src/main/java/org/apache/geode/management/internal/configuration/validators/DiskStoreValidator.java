@@ -19,6 +19,8 @@
 
 package org.apache.geode.management.internal.configuration.validators;
 
+import org.apache.commons.lang3.StringUtils;
+
 import org.apache.geode.management.configuration.DiskStore;
 import org.apache.geode.management.internal.CacheElementOperation;
 
@@ -26,6 +28,25 @@ public class DiskStoreValidator implements ConfigurationValidator<DiskStore> {
   @Override
   public void validate(CacheElementOperation operation, DiskStore config)
       throws IllegalArgumentException {
-    // no-op for now
+    switch (operation) {
+      case CREATE:
+      case UPDATE:
+        checkRequiredItems(config);
+    }
+  }
+
+  private void checkRequiredItems(DiskStore config) {
+    if (StringUtils.isEmpty(config.getName())) {
+      throw new IllegalArgumentException("Diskstore name is required.");
+    }
+    if (config.getDirectories() != null && config.getDirectories().size() > 0) {
+      if (config.getDirectories()
+          .stream()
+          .anyMatch(diskDir -> StringUtils.isEmpty(diskDir.getName()))) {
+        throw new IllegalArgumentException("Diskdir name is required.");
+      }
+    } else {
+      throw new IllegalArgumentException("At least one DiskDir element required.");
+    }
   }
 }
