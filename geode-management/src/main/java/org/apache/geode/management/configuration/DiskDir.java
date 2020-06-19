@@ -19,7 +19,11 @@
 
 package org.apache.geode.management.configuration;
 
-public class DiskDir {
+import java.io.Serializable;
+
+import org.apache.geode.management.api.JsonSerializable;
+
+public class DiskDir implements Serializable, JsonSerializable {
   private String name;
   private String dirSize;
 

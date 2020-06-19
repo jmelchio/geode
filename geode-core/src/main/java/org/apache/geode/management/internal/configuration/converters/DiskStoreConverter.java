@@ -32,14 +32,15 @@ public class DiskStoreConverter extends ConfigurationConverter<DiskStore, DiskSt
     DiskStore diskStore = new DiskStore();
 
     diskStore.setName(xmlObject.getName());
-    diskStore.setId(xmlObject.getId());
-    diskStore.setCompactionThreshold(xmlObject.getCompactionThreshold());
-    diskStore.setDiskUsageCriticalPercentage(xmlObject.getDiskUsageCriticalPercentage());
-    diskStore.setDiskUsageWarningPercentage(xmlObject.getDiskUsageWarningPercentage());
-    diskStore.setMaxOplogSize(xmlObject.getMaxOplogSize());
-    diskStore.setQueueSize(xmlObject.getQueueSize());
-    diskStore.setTimeInterval(xmlObject.getTimeInterval());
-    diskStore.setWriteBufferSize(xmlObject.getWriteBufferSize());
+    diskStore.setCompactionThreshold(Integer.parseInt(xmlObject.getCompactionThreshold()));
+    diskStore.setDiskUsageCriticalPercentage(
+        Float.parseFloat(xmlObject.getDiskUsageCriticalPercentage()));
+    diskStore
+        .setDiskUsageWarningPercentage(Float.parseFloat(xmlObject.getDiskUsageWarningPercentage()));
+    diskStore.setMaxOplogSizeInBytes(Long.parseLong(xmlObject.getMaxOplogSize()));
+    diskStore.setQueueSize(Integer.parseInt(xmlObject.getQueueSize()));
+    diskStore.setTimeInterval(Long.parseLong(xmlObject.getTimeInterval()));
+    diskStore.setWriteBufferSize(Integer.parseInt(xmlObject.getWriteBufferSize()));
     diskStore.setDirectories(xmlObject.getDiskDirs().stream().map(diskDirType -> {
       DiskDir diskDir = new DiskDir();
       diskDir.setDirSize(diskDirType.getDirSize());
@@ -55,15 +56,35 @@ public class DiskStoreConverter extends ConfigurationConverter<DiskStore, DiskSt
     DiskStoreType diskStoreType = new DiskStoreType();
 
     diskStoreType.setName(configObject.getName());
-    diskStoreType.setAllowForceCompaction(configObject.isAllowForceCompaction());
-    diskStoreType.setAutoCompact(configObject.isAutoCompact());
-    diskStoreType.setCompactionThreshold(configObject.getCompactionThreshold());
-    diskStoreType.setDiskUsageCriticalPercentage(configObject.getDiskUsageCriticalPercentage());
-    diskStoreType.setDiskUsageWarningPercentage(configObject.getDiskUsageWarningPercentage());
-    diskStoreType.setMaxOplogSize(configObject.getMaxOplogSize());
-    diskStoreType.setQueueSize(configObject.getQueueSize());
-    diskStoreType.setTimeInterval(configObject.getTimeInterval());
-    diskStoreType.setWriteBufferSize(configObject.getWriteBufferSize());
+    if (configObject.isAllowForceCompaction() != null) {
+      diskStoreType.setAllowForceCompaction(configObject.isAllowForceCompaction());
+    }
+    if (configObject.isAutoCompact() != null) {
+      diskStoreType.setAutoCompact(configObject.isAutoCompact());
+    }
+    if (configObject.getCompactionThreshold() != null) {
+      diskStoreType.setCompactionThreshold(configObject.getCompactionThreshold().toString());
+    }
+    if (configObject.getDiskUsageCriticalPercentage() != null) {
+      diskStoreType
+          .setDiskUsageCriticalPercentage(configObject.getDiskUsageCriticalPercentage().toString());
+    }
+    if (configObject.getDiskUsageWarningPercentage() != null) {
+      diskStoreType
+          .setDiskUsageWarningPercentage(configObject.getDiskUsageWarningPercentage().toString());
+    }
+    if (configObject.getMaxOplogSizeInBytes() != null) {
+      diskStoreType.setMaxOplogSize(configObject.getMaxOplogSizeInBytes().toString());
+    }
+    if (configObject.getQueueSize() != null) {
+      diskStoreType.setQueueSize(configObject.getQueueSize().toString());
+    }
+    if (configObject.getTimeInterval() != null) {
+      diskStoreType.setTimeInterval(configObject.getTimeInterval().toString());
+    }
+    if (configObject.getWriteBufferSize() != null) {
+      diskStoreType.setWriteBufferSize(configObject.getWriteBufferSize().toString());
+    }
     diskStoreType.setDiskDirs(configObject.getDirectories().stream().map(diskDir -> {
       DiskDirType diskDirType = new DiskDirType();
       diskDirType.setContent(diskDir.getName());
