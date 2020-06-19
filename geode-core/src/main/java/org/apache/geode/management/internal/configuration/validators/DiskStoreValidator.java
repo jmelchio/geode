@@ -17,9 +17,15 @@
  * under the License.
  */
 
-package org.apache.geode.management.runtime;
+package org.apache.geode.management.internal.configuration.validators;
 
-import org.apache.geode.management.api.JsonSerializable;
+import org.apache.geode.management.configuration.DiskStore;
+import org.apache.geode.management.internal.CacheElementOperation;
 
-public class DiskStoreInfo extends RuntimeInfo implements JsonSerializable {
+public class DiskStoreValidator implements ConfigurationValidator<DiskStore> {
+  @Override
+  public void validate(CacheElementOperation operation, DiskStore config)
+      throws IllegalArgumentException {
+    // no-op for now
+  }
 }
