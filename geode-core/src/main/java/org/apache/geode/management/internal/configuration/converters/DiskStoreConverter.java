@@ -32,15 +32,40 @@ public class DiskStoreConverter extends ConfigurationConverter<DiskStore, DiskSt
     DiskStore diskStore = new DiskStore();
 
     diskStore.setName(xmlObject.getName());
-    diskStore.setCompactionThreshold(Integer.parseInt(xmlObject.getCompactionThreshold()));
-    diskStore.setDiskUsageCriticalPercentage(
-        Float.parseFloat(xmlObject.getDiskUsageCriticalPercentage()));
-    diskStore
-        .setDiskUsageWarningPercentage(Float.parseFloat(xmlObject.getDiskUsageWarningPercentage()));
-    diskStore.setMaxOplogSizeInBytes(Long.parseLong(xmlObject.getMaxOplogSize()));
-    diskStore.setQueueSize(Integer.parseInt(xmlObject.getQueueSize()));
-    diskStore.setTimeInterval(Long.parseLong(xmlObject.getTimeInterval()));
-    diskStore.setWriteBufferSize(Integer.parseInt(xmlObject.getWriteBufferSize()));
+    if (xmlObject.isAllowForceCompaction() != null) {
+      diskStore.setAllowForceCompaction(xmlObject.isAllowForceCompaction());
+    }
+    if (xmlObject.isAutoCompact() != null) {
+      diskStore.setAutoCompact(xmlObject.isAutoCompact());
+    }
+
+    if (xmlObject.getCompactionThreshold() != null) {
+      diskStore.setCompactionThreshold(Integer.parseInt(xmlObject.getCompactionThreshold()));
+    }
+    if (xmlObject.getDiskUsageCriticalPercentage() != null) {
+      diskStore.setDiskUsageCriticalPercentage(
+          Float.parseFloat(xmlObject.getDiskUsageCriticalPercentage()));
+    }
+    if (xmlObject.getDiskUsageWarningPercentage() != null) {
+      diskStore
+          .setDiskUsageWarningPercentage(
+              Float.parseFloat(xmlObject.getDiskUsageWarningPercentage()));
+    }
+    if (xmlObject.getMaxOplogSize() != null) {
+      diskStore.setMaxOplogSizeInBytes(Long.parseLong(xmlObject.getMaxOplogSize()));
+    }
+
+    if (xmlObject.getQueueSize() != null) {
+      diskStore.setQueueSize(Integer.parseInt(xmlObject.getQueueSize()));
+    }
+    if (xmlObject.getTimeInterval() != null) {
+      diskStore.setTimeInterval(Long.parseLong(xmlObject.getTimeInterval()));
+    }
+    if (xmlObject.getWriteBufferSize() != null) {
+      diskStore.setWriteBufferSize(Integer.parseInt(xmlObject.getWriteBufferSize()));
+    }
+
+
     diskStore.setDirectories(xmlObject.getDiskDirs().stream().map(diskDirType -> {
       DiskDir diskDir = new DiskDir();
       diskDir.setDirSize(diskDirType.getDirSize());

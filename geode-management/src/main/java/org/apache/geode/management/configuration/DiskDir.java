@@ -27,6 +27,15 @@ public class DiskDir implements Serializable, JsonSerializable {
   private String name;
   private String dirSize;
 
+  public DiskDir() {
+
+  }
+
+  public DiskDir(String name, String dirSize) {
+    this.name = name;
+    this.dirSize = dirSize;
+  }
+
   public String getName() {
     return name;
   }
