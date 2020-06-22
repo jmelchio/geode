@@ -103,9 +103,14 @@ public class DiskStoreRealizer implements ConfigurationRealizer<DiskStore, DiskS
   @Override
   public RealizationResult delete(DiskStore config, InternalCache cache) throws Exception {
     org.apache.geode.cache.DiskStore diskStore = cache.findDiskStore(config.getName());
-    diskStore.destroy();
-    return new RealizationResult()
-        .setMessage("Diskstore " + config.getName() + " deleted successfully.");
+    if (diskStore != null) {
+      diskStore.destroy();
+      return new RealizationResult()
+          .setMessage("DiskStore " + config.getName() + " deleted successfully.");
+    } else {
+      return new RealizationResult().setMessage("DiskStore " + config.getName() + " not found.")
+          .setSuccess(false);
+    }
   }
 
   @Override
