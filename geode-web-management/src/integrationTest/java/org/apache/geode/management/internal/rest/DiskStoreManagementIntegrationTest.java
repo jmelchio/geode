@@ -15,20 +15,12 @@
 
 package org.apache.geode.management.internal.rest;
 
-import static org.apache.geode.cache.Region.SEPARATOR;
 import static org.apache.geode.test.junit.assertions.ClusterManagementRealizationResultAssert.assertManagementResult;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Collections;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,13 +39,6 @@ import org.apache.geode.management.api.RestTemplateClusterManagementServiceTrans
 import org.apache.geode.management.client.ClusterManagementServiceBuilder;
 import org.apache.geode.management.configuration.DiskDir;
 import org.apache.geode.management.configuration.DiskStore;
-import org.apache.geode.management.configuration.Index;
-import org.apache.geode.management.configuration.IndexType;
-import org.apache.geode.management.configuration.Region;
-import org.apache.geode.management.configuration.Region.Expiration;
-import org.apache.geode.management.configuration.Region.ExpirationAction;
-import org.apache.geode.management.configuration.Region.ExpirationType;
-import org.apache.geode.management.configuration.RegionType;
 import org.apache.geode.util.internal.GeodeJsonMapper;
 
 @RunWith(SpringRunner.class)
@@ -73,10 +58,11 @@ public class DiskStoreManagementIntegrationTest {
 
   private DiskStore diskStore;
   private DiskDir diskDir;
-  private static ObjectMapper mapper = GeodeJsonMapper.getMapper();
+  private static final ObjectMapper mapper = GeodeJsonMapper.getMapper();
 
   @Before
   public void before() {
+    // needs to be used together with any BaseLocatorContextLoader
     context = new LocatorWebContext(webApplicationContext);
     client = new ClusterManagementServiceBuilder().setTransport(
         new RestTemplateClusterManagementServiceTransport(
@@ -112,7 +98,7 @@ public class DiskStoreManagementIntegrationTest {
   }
 
   @Test
-  public void createWithMissingDiskDirFails() throws Exception {
+  public void createWithMissingDiskDirFails() {
     diskStore.setName("storeone");
 
     assertThatThrownBy(() -> client.create(diskStore))
@@ -120,25 +106,36 @@ public class DiskStoreManagementIntegrationTest {
   }
 
   @Test
-  public void createDuplicateDiskStoreFails() throws Exception {
+  public void createDuplicateDiskStoreFails() {
     diskStore.setName("storeone");
     diskDir.setName("diskdirone");
     diskStore.setDirectories(Collections.singletonList(diskDir));
 
-    // trying to create a duplicate index, reusing existing
+    // trying to create a duplicate diskstore, reusing existing
 
     assertManagementResult(client.create(diskStore))
         .hasStatusCode(ClusterManagementResult.StatusCode.OK);
 
     assertThatThrownBy(() -> client.create(diskStore))
-        .hasMessageContaining("ILLEGAL_ARGUMENT: At least one DiskDir element required");
+        .hasMessageContaining("ENTITY_EXISTS: DiskStore 'storeone' already exists in group cluster");
 
     assertManagementResult(client.delete(diskStore))
         .hasStatusCode(ClusterManagementResult.StatusCode.OK);
   }
 
   @Test
-  public void postToIndexRegionEndPoint() throws Exception {
+  public void createWithIllegalFails() {
+    diskStore.setName("storeone");
+    diskDir.setName("diskdirone");
+    diskStore.setDirectories(Collections.singletonList(diskDir));
+    diskStore.setDiskUsageCriticalPercentage(120.0F);
+
+    assertThatThrownBy(() -> client.create(diskStore))
+        .hasMessageContaining("ILLEGAL_ARGUMENT: Disk usage critical percentage must be set to a value between 0-100.  The value 120.0 is invalid");
+  }
+
+  @Test
+  public void postToIndexRegionEndPoint() {
 //    context.perform(post("/v1/regions/products/indexes").content(mapper.writeValueAsString(index)))
 //        .andExpect(status().isBadRequest())
 //        .andExpect(jsonPath("$.statusCode", Matchers.is("ILLEGAL_ARGUMENT")))
@@ -163,7 +160,7 @@ public class DiskStoreManagementIntegrationTest {
   }
 
   @Test
-  public void createIndex_succeedsForSpecificRegionAndGroup() throws Exception {
+  public void createIndex_succeedsForSpecificRegionAndGroup() {
 //    createGroupRegion();
 //
 //    index.setRegionPath("region1");
@@ -182,7 +179,7 @@ public class DiskStoreManagementIntegrationTest {
   }
 
   @Test
-  public void deleteIndex_succeeds() throws Exception {
+  public void deleteIndex_succeeds() {
 //    createClusterRegion();
 //
 //    createClusterIndex();
@@ -198,7 +195,7 @@ public class DiskStoreManagementIntegrationTest {
   }
 
   @Test
-  public void deleteIndex_succeeds_with_group() throws Exception {
+  public void deleteIndex_succeeds_with_group() {
 //    createGroupRegion();
 //
 //    createGroupIndex();
@@ -215,7 +212,7 @@ public class DiskStoreManagementIntegrationTest {
 
 
   @Test
-  public void deleteIndex_in_cluster_group_success() throws Exception {
+  public void deleteIndex_in_cluster_group_success() {
 //    createClusterRegion();
 //
 //    createClusterIndex();
@@ -231,7 +228,7 @@ public class DiskStoreManagementIntegrationTest {
   }
 
   @Test
-  public void deleteIndex_Index_in_group_success() throws Exception {
+  public void deleteIndex_Index_in_group_success() {
 //    createGroupRegion();
 //
 //    createGroupIndex();
@@ -247,7 +244,7 @@ public class DiskStoreManagementIntegrationTest {
   }
 
   @Test
-  public void deleteIndex_fails_index_not_found() throws Exception {
+  public void deleteIndex_fails_index_not_found() {
 //    createClusterRegion();
 //
 //    context.perform(delete("/v1/regions/region1/indexes/index1"))
@@ -261,7 +258,7 @@ public class DiskStoreManagementIntegrationTest {
   }
 
   @Test
-  public void deleteIndex_fails_index_not_found_with_group() throws Exception {
+  public void deleteIndex_fails_index_not_found_with_group() {
 //    createGroupRegion();
 //
 //    context.perform(delete("/v1/regions/region1/indexes/index1").param("group", "group1"))
