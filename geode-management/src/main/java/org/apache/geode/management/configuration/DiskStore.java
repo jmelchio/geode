@@ -21,11 +21,15 @@ package org.apache.geode.management.configuration;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import org.apache.geode.management.runtime.DiskStoreInfo;
 
 public class DiskStore extends GroupableConfiguration<DiskStoreInfo> {
   public static final String DISK_STORE_CONFIG_ENDPOINT = "/diskstores";
 
+  @JsonIgnore
+  private String id;
   private String name;
   private Integer compactionThreshold;
   private Float diskUsageCriticalPercentage;
