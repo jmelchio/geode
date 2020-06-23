@@ -68,7 +68,7 @@ public class DiskStoreValidator implements ConfigurationValidator<DiskStore> {
       if (StringUtils.isEmpty(diskDir.getDirSize())) {
         return Integer.MAX_VALUE;
       } else {
-        return Integer.getInteger(diskDir.getDirSize());
+        return Integer.parseInt(diskDir.getDirSize());
       }
     }).toArray());
   }
