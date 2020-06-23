@@ -15,20 +15,12 @@
 
 package org.apache.geode.management.internal.rest;
 
-import static org.apache.geode.cache.Region.SEPARATOR;
 import static org.apache.geode.test.junit.assertions.ClusterManagementRealizationResultAssert.assertManagementResult;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Collections;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,13 +39,6 @@ import org.apache.geode.management.api.RestTemplateClusterManagementServiceTrans
 import org.apache.geode.management.client.ClusterManagementServiceBuilder;
 import org.apache.geode.management.configuration.DiskDir;
 import org.apache.geode.management.configuration.DiskStore;
-import org.apache.geode.management.configuration.Index;
-import org.apache.geode.management.configuration.IndexType;
-import org.apache.geode.management.configuration.Region;
-import org.apache.geode.management.configuration.Region.Expiration;
-import org.apache.geode.management.configuration.Region.ExpirationAction;
-import org.apache.geode.management.configuration.Region.ExpirationType;
-import org.apache.geode.management.configuration.RegionType;
 import org.apache.geode.util.internal.GeodeJsonMapper;
 
 @RunWith(SpringRunner.class)
@@ -125,8 +110,7 @@ public class DiskStoreManagementIntegrationTest {
     diskDir.setName("diskdirone");
     diskStore.setDirectories(Collections.singletonList(diskDir));
 
-    // trying to create a duplicate index, reusing existing
-
+    // trying to create a duplicate diskstore, reusing existing
     assertManagementResult(client.create(diskStore))
         .hasStatusCode(ClusterManagementResult.StatusCode.OK);
 
@@ -139,170 +123,170 @@ public class DiskStoreManagementIntegrationTest {
 
   @Test
   public void postToIndexRegionEndPoint() throws Exception {
-//    context.perform(post("/v1/regions/products/indexes").content(mapper.writeValueAsString(index)))
-//        .andExpect(status().isBadRequest())
-//        .andExpect(jsonPath("$.statusCode", Matchers.is("ILLEGAL_ARGUMENT")))
-//        .andExpect(jsonPath("$.statusMessage",
-//            Matchers
-//                .containsString("Region name in path must match Region name in configuration.")));
-//
-//    index.setRegionPath(null);
-//    context.perform(post("/v1/regions/products/indexes").content(mapper.writeValueAsString(index)))
-//        .andExpect(status().isNotFound())
-//        .andExpect(jsonPath("$.statusCode", Matchers.is("ENTITY_NOT_FOUND")))
-//        .andExpect(jsonPath("$.statusMessage",
-//            Matchers.containsString("Region provided does not exist: products.")));
-//
+    // context.perform(post("/v1/regions/products/indexes").content(mapper.writeValueAsString(index)))
+    // .andExpect(status().isBadRequest())
+    // .andExpect(jsonPath("$.statusCode", Matchers.is("ILLEGAL_ARGUMENT")))
+    // .andExpect(jsonPath("$.statusMessage",
+    // Matchers
+    // .containsString("Region name in path must match Region name in configuration.")));
+    //
+    // index.setRegionPath(null);
+    // context.perform(post("/v1/regions/products/indexes").content(mapper.writeValueAsString(index)))
+    // .andExpect(status().isNotFound())
+    // .andExpect(jsonPath("$.statusCode", Matchers.is("ENTITY_NOT_FOUND")))
+    // .andExpect(jsonPath("$.statusMessage",
+    // Matchers.containsString("Region provided does not exist: products.")));
+    //
   }
 
   private void createClusterRegion() {
-//    diskStore.setName("region1");
-//    diskStore.setType(RegionType.PARTITION);
-//    assertManagementResult(client.create(diskStore))
-//        .hasStatusCode(ClusterManagementResult.StatusCode.OK);
+    // diskStore.setName("region1");
+    // diskStore.setType(RegionType.PARTITION);
+    // assertManagementResult(client.create(diskStore))
+    // .hasStatusCode(ClusterManagementResult.StatusCode.OK);
   }
 
   @Test
   public void createIndex_succeedsForSpecificRegionAndGroup() throws Exception {
-//    createGroupRegion();
-//
-//    index.setRegionPath("region1");
-//    index.setExpression("i am le tired");
-//    index.setName("itworks");
-//
-//    context.perform(
-//        post("/v1/regions/region1/indexes").content(mapper.writeValueAsString(index)))
-//        .andExpect(status().isCreated())
-//        .andExpect(jsonPath("$.statusCode", Matchers.is("OK")))
-//        .andExpect(jsonPath("$.statusMessage",
-//            Matchers
-//                .containsString("Successfully updated configuration for group1.")));
-//
-//    deleteRegion();
+    // createGroupRegion();
+    //
+    // index.setRegionPath("region1");
+    // index.setExpression("i am le tired");
+    // index.setName("itworks");
+    //
+    // context.perform(
+    // post("/v1/regions/region1/indexes").content(mapper.writeValueAsString(index)))
+    // .andExpect(status().isCreated())
+    // .andExpect(jsonPath("$.statusCode", Matchers.is("OK")))
+    // .andExpect(jsonPath("$.statusMessage",
+    // Matchers
+    // .containsString("Successfully updated configuration for group1.")));
+    //
+    // deleteRegion();
   }
 
   @Test
   public void deleteIndex_succeeds() throws Exception {
-//    createClusterRegion();
-//
-//    createClusterIndex();
-//
-//    context.perform(delete("/v1/regions/region1/indexes/index1"))
-//        .andExpect(status().isOk())
-//        .andExpect(jsonPath("$.statusCode", Matchers.is("OK")))
-//        .andExpect(jsonPath("$.statusMessage",
-//            Matchers
-//                .containsString("Successfully updated configuration for cluster.")));
-//
-//    deleteRegion();
+    // createClusterRegion();
+    //
+    // createClusterIndex();
+    //
+    // context.perform(delete("/v1/regions/region1/indexes/index1"))
+    // .andExpect(status().isOk())
+    // .andExpect(jsonPath("$.statusCode", Matchers.is("OK")))
+    // .andExpect(jsonPath("$.statusMessage",
+    // Matchers
+    // .containsString("Successfully updated configuration for cluster.")));
+    //
+    // deleteRegion();
   }
 
   @Test
   public void deleteIndex_succeeds_with_group() throws Exception {
-//    createGroupRegion();
-//
-//    createGroupIndex();
-//
-//    context.perform(delete("/v1/regions/region1/indexes/index1").param("group", "group1"))
-//        .andExpect(status().isOk())
-//        .andExpect(jsonPath("$.statusCode", Matchers.is("OK")))
-//        .andExpect(jsonPath("$.statusMessage",
-//            Matchers
-//                .containsString("Successfully updated configuration for group1.")));
-//
-//    deleteRegion();
+    // createGroupRegion();
+    //
+    // createGroupIndex();
+    //
+    // context.perform(delete("/v1/regions/region1/indexes/index1").param("group", "group1"))
+    // .andExpect(status().isOk())
+    // .andExpect(jsonPath("$.statusCode", Matchers.is("OK")))
+    // .andExpect(jsonPath("$.statusMessage",
+    // Matchers
+    // .containsString("Successfully updated configuration for group1.")));
+    //
+    // deleteRegion();
   }
 
 
   @Test
   public void deleteIndex_in_cluster_group_success() throws Exception {
-//    createClusterRegion();
-//
-//    createClusterIndex();
-//
-//    context.perform(delete("/v1/regions/region1/indexes/index1"))
-//        .andExpect(status().isOk())
-//        .andExpect(jsonPath("$.statusCode", Matchers.is("OK")))
-//        .andExpect(jsonPath("$.statusMessage",
-//            Matchers
-//                .containsString("Successfully updated configuration for cluster")));
-//
-//    deleteRegion();
+    // createClusterRegion();
+    //
+    // createClusterIndex();
+    //
+    // context.perform(delete("/v1/regions/region1/indexes/index1"))
+    // .andExpect(status().isOk())
+    // .andExpect(jsonPath("$.statusCode", Matchers.is("OK")))
+    // .andExpect(jsonPath("$.statusMessage",
+    // Matchers
+    // .containsString("Successfully updated configuration for cluster")));
+    //
+    // deleteRegion();
   }
 
   @Test
   public void deleteIndex_Index_in_group_success() throws Exception {
-//    createGroupRegion();
-//
-//    createGroupIndex();
-//
-//    context.perform(delete("/v1/regions/region1/indexes/index1"))
-//        .andExpect(status().isOk())
-//        .andExpect(jsonPath("$.statusCode", Matchers.is("OK")))
-//        .andExpect(jsonPath("$.statusMessage",
-//            Matchers
-//                .containsString("Successfully updated configuration for group1")));
-//
-//    deleteRegion();
+    // createGroupRegion();
+    //
+    // createGroupIndex();
+    //
+    // context.perform(delete("/v1/regions/region1/indexes/index1"))
+    // .andExpect(status().isOk())
+    // .andExpect(jsonPath("$.statusCode", Matchers.is("OK")))
+    // .andExpect(jsonPath("$.statusMessage",
+    // Matchers
+    // .containsString("Successfully updated configuration for group1")));
+    //
+    // deleteRegion();
   }
 
   @Test
   public void deleteIndex_fails_index_not_found() throws Exception {
-//    createClusterRegion();
-//
-//    context.perform(delete("/v1/regions/region1/indexes/index1"))
-//        .andExpect(status().isNotFound())
-//        .andExpect(jsonPath("$.statusCode", Matchers.is("ENTITY_NOT_FOUND")))
-//        .andExpect(jsonPath("$.statusMessage",
-//            Matchers
-//                .containsString("Index 'index1' does not exist.")));
-//
-//    deleteRegion();
+    // createClusterRegion();
+    //
+    // context.perform(delete("/v1/regions/region1/indexes/index1"))
+    // .andExpect(status().isNotFound())
+    // .andExpect(jsonPath("$.statusCode", Matchers.is("ENTITY_NOT_FOUND")))
+    // .andExpect(jsonPath("$.statusMessage",
+    // Matchers
+    // .containsString("Index 'index1' does not exist.")));
+    //
+    // deleteRegion();
   }
 
   @Test
   public void deleteIndex_fails_index_not_found_with_group() throws Exception {
-//    createGroupRegion();
-//
-//    context.perform(delete("/v1/regions/region1/indexes/index1").param("group", "group1"))
-//        .andExpect(status().isNotFound())
-//        .andExpect(jsonPath("$.statusCode", Matchers.is("ENTITY_NOT_FOUND")))
-//        .andExpect(jsonPath("$.statusMessage",
-//            Matchers
-//                .containsString("Index 'index1' does not exist.")));
-//
-//    deleteRegion();
+    // createGroupRegion();
+    //
+    // context.perform(delete("/v1/regions/region1/indexes/index1").param("group", "group1"))
+    // .andExpect(status().isNotFound())
+    // .andExpect(jsonPath("$.statusCode", Matchers.is("ENTITY_NOT_FOUND")))
+    // .andExpect(jsonPath("$.statusMessage",
+    // Matchers
+    // .containsString("Index 'index1' does not exist.")));
+    //
+    // deleteRegion();
   }
 
   private void createGroupRegion() {
-//    diskStore.setName("region1");
-//    diskStore.setType(RegionType.PARTITION);
-//    diskStore.setGroup("group1");
-//    assertManagementResult(client.create(diskStore))
-//        .hasStatusCode(ClusterManagementResult.StatusCode.OK);
+    // diskStore.setName("region1");
+    // diskStore.setType(RegionType.PARTITION);
+    // diskStore.setGroup("group1");
+    // assertManagementResult(client.create(diskStore))
+    // .hasStatusCode(ClusterManagementResult.StatusCode.OK);
   }
 
   private void deleteRegion() {
-//    diskStore.setGroup(null);
-//    assertManagementResult(client.delete(diskStore))
-//        .hasStatusCode(ClusterManagementResult.StatusCode.OK);
+    // diskStore.setGroup(null);
+    // assertManagementResult(client.delete(diskStore))
+    // .hasStatusCode(ClusterManagementResult.StatusCode.OK);
   }
 
   private void createGroupIndex() {
-//    index.setRegionPath("region1");
-//    index.setIndexType(IndexType.RANGE);
-//    index.setName("index1");
-//    index.setExpression("some expression");
-//    assertManagementResult(client.create(index))
-//        .hasStatusCode(ClusterManagementResult.StatusCode.OK);
+    // index.setRegionPath("region1");
+    // index.setIndexType(IndexType.RANGE);
+    // index.setName("index1");
+    // index.setExpression("some expression");
+    // assertManagementResult(client.create(index))
+    // .hasStatusCode(ClusterManagementResult.StatusCode.OK);
   }
 
   private void createClusterIndex() {
-//    index.setRegionPath("region1");
-//    index.setIndexType(IndexType.RANGE);
-//    index.setName("index1");
-//    index.setExpression("some expression");
-//    assertManagementResult(client.create(index))
-//        .hasStatusCode(ClusterManagementResult.StatusCode.OK);
+    // index.setRegionPath("region1");
+    // index.setIndexType(IndexType.RANGE);
+    // index.setName("index1");
+    // index.setExpression("some expression");
+    // assertManagementResult(client.create(index))
+    // .hasStatusCode(ClusterManagementResult.StatusCode.OK);
   }
 }

@@ -20,11 +20,14 @@
 package org.apache.geode.management.configuration;
 
 import java.util.List;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import org.apache.geode.annotations.Experimental;
 import org.apache.geode.management.runtime.DiskStoreInfo;
 
+@Experimental
 public class DiskStore extends GroupableConfiguration<DiskStoreInfo> {
   public static final String DISK_STORE_CONFIG_ENDPOINT = "/diskstores";
 
@@ -139,5 +142,25 @@ public class DiskStore extends GroupableConfiguration<DiskStoreInfo> {
   @Override
   public Links getLinks() {
     return new Links(getId(), DISK_STORE_CONFIG_ENDPOINT);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    DiskStore diskStore = (DiskStore) o;
+    return Objects.equals(name, diskStore.name);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), name);
   }
 }
