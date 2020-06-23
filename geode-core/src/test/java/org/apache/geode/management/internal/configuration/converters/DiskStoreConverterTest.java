@@ -27,7 +27,7 @@ import org.apache.geode.management.configuration.DiskDir;
 import org.apache.geode.management.configuration.DiskStore;
 
 public class DiskStoreConverterTest {
-  private DiskStoreConverter diskStoreConverter = new DiskStoreConverter();
+  private final DiskStoreConverter diskStoreConverter = new DiskStoreConverter();
 
   @Test
   public void fromNonNullConfigObjectCopiesPropertiesCorrectly() {
@@ -43,7 +43,7 @@ public class DiskStoreConverterTest {
     config.setTimeInterval(1L);
     config.setWriteBufferSize(1);
 
-    ArrayList<DiskDir> directories = new ArrayList();
+    ArrayList<DiskDir> directories = new ArrayList<>();
     directories.add(new DiskDir("directoryName", "1"));
     config.setDirectories(directories);
 
@@ -88,7 +88,7 @@ public class DiskStoreConverterTest {
     diskStoreType.setTimeInterval("1");
     diskStoreType.setWriteBufferSize("1");
 
-    ArrayList<DiskDirType> diskDirs = new ArrayList();
+    ArrayList<DiskDirType> diskDirs = new ArrayList<>();
     diskDirs.add(new DiskDirType());
     diskStoreType.setDiskDirs(diskDirs);
 

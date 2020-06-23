@@ -19,8 +19,14 @@
 
 package org.apache.geode.management.internal.configuration.validators;
 
+import static org.apache.geode.internal.cache.DiskStoreAttributes.checkMinOplogSize;
+import static org.apache.geode.internal.cache.DiskStoreAttributes.checkQueueSize;
+import static org.apache.geode.internal.cache.DiskStoreAttributes.checkWriteBufferSize;
+import static org.apache.geode.internal.cache.DiskStoreAttributes.verifyNonNegativeDirSize;
+
 import org.apache.commons.lang3.StringUtils;
 
+import org.apache.geode.internal.cache.DiskStoreMonitor;
 import org.apache.geode.management.configuration.DiskStore;
 import org.apache.geode.management.internal.CacheElementOperation;
 
@@ -32,7 +38,39 @@ public class DiskStoreValidator implements ConfigurationValidator<DiskStore> {
       case CREATE:
       case UPDATE:
         checkRequiredItems(config);
+        checkValueRanges(config);
     }
+  }
+
+  private void checkValueRanges(DiskStore config) {
+    if (config.getDiskUsageCriticalPercentage() != null) {
+      DiskStoreMonitor.checkCritical(config.getDiskUsageCriticalPercentage());
+    }
+    if (config.getDiskUsageWarningPercentage() != null) {
+      DiskStoreMonitor.checkWarning(config.getDiskUsageWarningPercentage());
+    }
+    if (config.getCompactionThreshold() != null) {
+      if (0 > config.getCompactionThreshold() || config.getCompactionThreshold() > 100) {
+        throw new IllegalArgumentException(
+            "CompactionThreshold has to be set to a value between 0-100.");
+      }
+    }
+    if (config.getMaxOplogSizeInBytes() != null) {
+      checkMinOplogSize(config.getMaxOplogSizeInBytes());
+    }
+    if (config.getQueueSize() != null) {
+      checkQueueSize(config.getQueueSize());
+    }
+    if (config.getWriteBufferSize() != null) {
+      checkWriteBufferSize(config.getWriteBufferSize());
+    }
+    verifyNonNegativeDirSize(config.getDirectories().stream().mapToInt(diskDir -> {
+      if (StringUtils.isEmpty(diskDir.getDirSize())) {
+        return Integer.MAX_VALUE;
+      } else {
+        return Integer.parseInt(diskDir.getDirSize());
+      }
+    }).toArray());
   }
 
   private void checkRequiredItems(DiskStore config) {
