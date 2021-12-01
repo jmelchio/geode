@@ -766,6 +766,7 @@ public class OpExecutorImpl implements ExecutablePool {
           || cause instanceof AuthenticationExpiredException) {
         // 2nd exception-message above is from AbstractOp.sendMessage()
 
+        logger.info("joris: token expired, re-authenticating");
         if (pool.getMultiuserAuthentication()) {
           final UserAttributes ua = getUserAttributesFromThreadLocal();
           if (ua != null) {
@@ -776,6 +777,7 @@ public class OpExecutorImpl implements ExecutablePool {
           conn.getServer().setUserId(AuthenticateUserOp.executeOn(wrappedConnection, this));
         }
 
+        logger.info("joris: re-authenticated, trying to execute operation again");
         return conn.execute(op);
       } else {
         throw sce;
