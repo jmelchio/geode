@@ -147,7 +147,9 @@ public class OpExecutorImpl implements ExecutablePool {
         }
         try {
           // for single user, it's already authenticated when opening the connection
+          logger.info("joris: before authenticateIfMultiUser");
           authenticateIfMultiUser(conn, op);
+          logger.info("joris: before executeWithPossibleReAuthentication");
           return executeWithPossibleReAuthentication(conn, op);
         } catch (MessageTooLargeException e) {
           throw new GemFireIOException("unable to transmit message to server", e);
@@ -756,6 +758,7 @@ public class OpExecutorImpl implements ExecutablePool {
 
   private Object executeWithPossibleReAuthentication(final Connection conn, final Op op)
       throws Exception {
+    logger.info("joris: about to execute in executeWithPossibleReAuthentication");
     try {
       return conn.execute(op);
     } catch (final ServerConnectivityException sce) {
