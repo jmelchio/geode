@@ -785,6 +785,8 @@ public class OpExecutorImpl implements ExecutablePool {
       } else {
         throw sce;
       }
+    } finally {
+      logger.info("joris: in finally for try executeWithPossibleReAuthentication");
     }
   }
 
