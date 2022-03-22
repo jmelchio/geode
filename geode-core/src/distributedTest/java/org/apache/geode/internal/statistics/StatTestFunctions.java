@@ -30,7 +30,7 @@ public final class StatTestFunctions implements Serializable {
     @Override
     public void execute(FunctionContext<Object> context) {
       try {
-        Thread.currentThread().wait(HANG_TIME_MILLIS);
+        Thread.sleep(HANG_TIME_MILLIS);
       } catch (InterruptedException e) {
         context.getResultSender().lastResult(FAIL_OUTPUT);
       }
