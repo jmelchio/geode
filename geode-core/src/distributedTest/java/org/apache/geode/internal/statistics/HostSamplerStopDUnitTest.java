@@ -16,16 +16,25 @@
 
 package org.apache.geode.internal.statistics;
 
-import static org.apache.geode.cache.execute.FunctionService.onServers;
+import static org.apache.geode.cache.execute.FunctionService.onRegion;
 import static org.apache.geode.distributed.ConfigurationProperties.LOG_FILE;
 import static org.apache.geode.distributed.ConfigurationProperties.LOG_LEVEL;
 import static org.apache.geode.distributed.ConfigurationProperties.SERIALIZABLE_OBJECT_FILTER;
 import static org.apache.geode.distributed.ConfigurationProperties.STATISTIC_ARCHIVE_FILE;
+import static org.apache.geode.distributed.ConfigurationProperties.THREAD_MONITOR_INTERVAL;
+import static org.apache.geode.distributed.ConfigurationProperties.THREAD_MONITOR_TIME_LIMIT;
 import static org.apache.geode.test.awaitility.GeodeAwaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 
 import org.junit.After;
@@ -33,12 +42,15 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.apache.geode.cache.Region;
 import org.apache.geode.cache.RegionShortcut;
 import org.apache.geode.cache.client.ClientCache;
+import org.apache.geode.cache.client.ClientRegionShortcut;
 import org.apache.geode.cache.execute.Function;
 import org.apache.geode.cache.execute.ResultCollector;
 import org.apache.geode.distributed.internal.InternalDistributedSystem;
 import org.apache.geode.internal.cache.InternalCache;
+import org.apache.geode.internal.cache.control.ResourceManagerStats;
 import org.apache.geode.test.dunit.rules.ClusterStartupRule;
 import org.apache.geode.test.dunit.rules.MemberVM;
 import org.apache.geode.test.junit.rules.ClientCacheRule;
@@ -47,6 +59,7 @@ import org.apache.geode.test.junit.rules.VMProvider;
 
 public class HostSamplerStopDUnitTest {
   private static final String TEST_STATS_FILE_NAME = "testStats.gfs";
+  private static final DateFormat DATE_TIME_INSTANCE = SimpleDateFormat.getDateTimeInstance();
   private static Function<Object> hangFunction;
   private MemberVM serverVM1;
 
@@ -66,6 +79,8 @@ public class HostSamplerStopDUnitTest {
     props.setProperty(SERIALIZABLE_OBJECT_FILTER, "org.apache.geode.internal.statistics.*");
     props.setProperty(LOG_FILE, "system.log");
     props.setProperty(LOG_LEVEL, "info");
+    props.setProperty(THREAD_MONITOR_INTERVAL, "5000");
+    props.setProperty(THREAD_MONITOR_TIME_LIMIT, "5000");
 
     serverVM1 = clusterStartupRule.startServerVM(1, props, locatorPort);
 
@@ -106,22 +121,72 @@ public class HostSamplerStopDUnitTest {
   public void HostStatSamplerStopFlushesStatsToFile() throws Exception {
     ClientCache clientCache = clientCacheRule.createCache();
     hangFunction = new StatTestFunctions.HangFunction();
+    Region<Object, Object> region =
+        clientCache.createClientRegionFactory(ClientRegionShortcut.PROXY).create("region");
 
     CompletableFuture<ResultCollector> rc = CompletableFuture
-        .supplyAsync(() -> onServers(clientCache.getDefaultPool()).execute(hangFunction));
+        .supplyAsync(() -> onRegion(region).execute(hangFunction));
 
+    File workingDir = serverVM1.getWorkingDir();
+
+    System.out.println(
+        "[" + DATE_TIME_INSTANCE.format(new Date(System.currentTimeMillis())) + "] joris - before");
+
+    Arrays.asList(Objects.requireNonNull(workingDir.listFiles())).forEach(this::fileReport);
+
+    Thread.sleep(35000);
     VMProvider.invokeInEveryMember(() -> {
-      SampleCollector sampleCollector = ClusterStartupRule.getCache().getInternalDistributedSystem()
-          .getStatSampler().getSampleCollector();
-      assertThat(sampleCollector.currentHandlersForTesting())
-          .hasAtLeastOneElementOfType(SampleHandler.class);
-      for (SampleHandler sampleHandler : sampleCollector.currentHandlersForTesting()) {
-        System.out.println("joris:" + sampleHandler.toString());
-      }
+      InternalDistributedSystem internalDistributedSystem =
+          ClusterStartupRule.getCache().getInternalDistributedSystem();
+      ResourceManagerStats resourceManagerStats =
+          new ResourceManagerStats(internalDistributedSystem);
+      System.out.println("[" + DATE_TIME_INSTANCE.format(new Date(System.currentTimeMillis()))
+          + "] joris - stuckThreads: " + resourceManagerStats.getNumThreadStuck());
     }, serverVM1);
 
+    Thread.sleep(35000);
+    VMProvider.invokeInEveryMember(() -> {
+      InternalDistributedSystem internalDistributedSystem =
+          ClusterStartupRule.getCache().getInternalDistributedSystem();
+      ResourceManagerStats resourceManagerStats =
+          new ResourceManagerStats(internalDistributedSystem);
+      System.out.println("[" + DATE_TIME_INSTANCE.format(new Date(System.currentTimeMillis()))
+          + "] joris - stuckThreads: " + resourceManagerStats.getNumThreadStuck());
+    }, serverVM1);
+
+    System.out.println(
+        "[" + DATE_TIME_INSTANCE.format(new Date(System.currentTimeMillis())) + "] joris - after");
+    Arrays.asList(Objects.requireNonNull(workingDir.listFiles())).forEach(this::fileReport);
+
     ResultCollector results = rc.join();
-    System.out.println("joris - results: " + results.getResult());
+    System.out.println("[" + DATE_TIME_INSTANCE.format(new Date(System.currentTimeMillis()))
+        + "] joris - results: " + results.getResult());
+  }
+
+  private void fileReport(File file) {
+    int lineCount = 0;
+    try {
+      Scanner scanner = new Scanner(file);
+      while (scanner.hasNextLine()) {
+        String line = scanner.nextLine();
+        if (line.toLowerCase().contains("thread")) {
+          System.out.println("[" + DATE_TIME_INSTANCE.format(new Date(System.currentTimeMillis()))
+              + "] joris - " + file.getName() + ": " + line);
+        }
+        lineCount++;
+      }
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    }
+    System.out.println("[" + DATE_TIME_INSTANCE.format(new Date(System.currentTimeMillis()))
+        + "] joris - files: " + file.getAbsolutePath() + " lines: " + lineCount);
+  }
+
+  private void showStuckThreads() {
+    InternalDistributedSystem internalDistributedSystem =
+        ClusterStartupRule.getCache().getInternalDistributedSystem();
+    ResourceManagerStats resourceManagerStats = new ResourceManagerStats(internalDistributedSystem);
+    System.out.println("joris - stuckThreads: " + resourceManagerStats.getNumThreadStuck());
   }
 
 }

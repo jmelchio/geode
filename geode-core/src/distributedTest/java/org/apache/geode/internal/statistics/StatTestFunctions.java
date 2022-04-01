@@ -17,6 +17,9 @@
 package org.apache.geode.internal.statistics;
 
 import java.io.Serializable;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import org.apache.geode.cache.execute.Function;
 import org.apache.geode.cache.execute.FunctionContext;
@@ -25,15 +28,23 @@ public final class StatTestFunctions implements Serializable {
   public static class HangFunction implements Function<Object> {
     public static final String SUCCESS_OUTPUT = "nothingToReturn";
     public static final String FAIL_OUTPUT = "interrupted";
-    public static final long HANG_TIME_MILLIS = 120000;
+    public static final long HANG_TIME_MILLIS = 60000;
+    public static final DateFormat SDF = SimpleDateFormat.getDateTimeInstance();
+
 
     @Override
     public void execute(FunctionContext<Object> context) {
       try {
+        System.out.println("[" + SDF.format(new Date(System.currentTimeMillis()))
+            + "] joris - going to sleep on thread: " + Thread.currentThread().getName());
         Thread.sleep(HANG_TIME_MILLIS);
       } catch (InterruptedException e) {
+        System.out.println("[" + SDF.format(new Date(System.currentTimeMillis()))
+            + "] joris - interrupted on thread: " + Thread.currentThread().getName());
         context.getResultSender().lastResult(FAIL_OUTPUT);
       }
+      System.out.println("[" + SDF.format(new Date(System.currentTimeMillis()))
+          + "] joris - about to wake up on thread: " + Thread.currentThread().getName());
       context.getResultSender().lastResult(SUCCESS_OUTPUT);
     }
 
