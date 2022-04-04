@@ -139,7 +139,7 @@ public class HostSamplerStopDUnitTest {
       InternalDistributedSystem internalDistributedSystem =
           ClusterStartupRule.getCache().getInternalDistributedSystem();
       ResourceManagerStats resourceManagerStats =
-          new ResourceManagerStats(internalDistributedSystem);
+          ClusterStartupRule.getCache().getInternalResourceManager().getStats();
       System.out.println("[" + DATE_TIME_INSTANCE.format(new Date(System.currentTimeMillis()))
           + "] joris - stuckThreads: " + resourceManagerStats.getNumThreadStuck());
     }, serverVM1);
@@ -149,7 +149,7 @@ public class HostSamplerStopDUnitTest {
       InternalDistributedSystem internalDistributedSystem =
           ClusterStartupRule.getCache().getInternalDistributedSystem();
       ResourceManagerStats resourceManagerStats =
-          new ResourceManagerStats(internalDistributedSystem);
+          ClusterStartupRule.getCache().getInternalResourceManager().getStats();
       System.out.println("[" + DATE_TIME_INSTANCE.format(new Date(System.currentTimeMillis()))
           + "] joris - stuckThreads: " + resourceManagerStats.getNumThreadStuck());
     }, serverVM1);
@@ -161,6 +161,8 @@ public class HostSamplerStopDUnitTest {
     ResultCollector results = rc.join();
     System.out.println("[" + DATE_TIME_INSTANCE.format(new Date(System.currentTimeMillis()))
         + "] joris - results: " + results.getResult());
+
+
   }
 
   private void fileReport(File file) {
