@@ -1665,6 +1665,8 @@ public class PRHARedundancyProvider {
       // try to recover the local buckets before the proxy buckets. This will allow us to detect
       // any ConflictingDataException before the proxy buckets update their membership view.
       for (ProxyBucketRegion proxyBucket : bucketsHostedLocally) {
+        logger.info("proxyBucket: " + proxyBucket.getBucketId() + " - " + proxyBucket.getName()
+            + " - " + proxyBucket.getFullPath() + " - " + proxyBucket.getAttributes());
         proxyBucket.waitForPrimaryPersistentRecovery();
       }
 

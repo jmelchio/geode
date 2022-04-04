@@ -407,6 +407,8 @@ public class ProxyBucketRegion implements Bucket {
   }
 
   void recoverFromDiskRecursively() {
+    logger.info("recovring from disk recursively: " + getName() + " - " + getFullPath() + " - "
+        + getAttributes());
     recoverFromDisk();
 
     List<PartitionedRegion> colocatedWithList =
@@ -431,12 +433,15 @@ public class ProxyBucketRegion implements Bucket {
           persistenceAdvisor.wasHosting());
     }
     if (!persistenceAdvisor.isRecovering()) {
+      logger.info("bailing from recover because persistenceAdvisor.isRecovering() returns false: "
+          + getName() + " - " + getFullPath());
       return;
     }
     recoverFromDiskCnt++;
 
     try {
       if (persistenceAdvisor.wasHosting()) {
+        logger.info("{} used to host data. Attempting to recover.", getFullPath());
         if (isDebugEnabled) {
           logger.debug("{} used to host data. Attempting to recover.", getFullPath());
         }
@@ -483,6 +488,9 @@ public class ProxyBucketRegion implements Bucket {
               "Unable to restore the persistent bucket " + getName());
         }
 
+        logger.info(
+            "{} redundancy is already satisfied, so discarding persisted data. Current hosts {}",
+            getFullPath(), advisor.adviseReplicates());
         if (isDebugEnabled) {
           logger.debug(
               "{} redundancy is already satisfied, so discarding persisted data. Current hosts {}",
@@ -493,6 +501,7 @@ public class ProxyBucketRegion implements Bucket {
         destroyOfflineData();
       }
 
+      logger.info("{} initializing membership view from peers", getFullPath());
       if (isDebugEnabled) {
         logger.debug("{} initializing membership view from peers", getFullPath());
       }
