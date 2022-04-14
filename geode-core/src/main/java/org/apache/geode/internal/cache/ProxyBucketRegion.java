@@ -407,7 +407,7 @@ public class ProxyBucketRegion implements Bucket {
   }
 
   void recoverFromDiskRecursively() {
-    logger.info("recovring from disk recursively: " + getName() + " - " + getFullPath() + " - "
+    logger.info("joris: recovering from disk recursively: " + getName() + " - " + getFullPath() + " - "
         + getAttributes());
     recoverFromDisk();
 
@@ -433,7 +433,7 @@ public class ProxyBucketRegion implements Bucket {
           persistenceAdvisor.wasHosting());
     }
     if (!persistenceAdvisor.isRecovering()) {
-      logger.info("bailing from recover because persistenceAdvisor.isRecovering() returns false: "
+      logger.info("joris: bailing from recover because persistenceAdvisor.isRecovering() returns false: "
           + getName() + " - " + getFullPath());
       return;
     }
@@ -441,7 +441,7 @@ public class ProxyBucketRegion implements Bucket {
 
     try {
       if (persistenceAdvisor.wasHosting()) {
-        logger.info("{} used to host data. Attempting to recover.", getFullPath());
+        logger.info("joris: {} used to host data. Attempting to recover.", getFullPath());
         if (isDebugEnabled) {
           logger.debug("{} used to host data. Attempting to recover.", getFullPath());
         }
@@ -489,7 +489,7 @@ public class ProxyBucketRegion implements Bucket {
         }
 
         logger.info(
-            "{} redundancy is already satisfied, so discarding persisted data. Current hosts {}",
+            "joris: {} redundancy is already satisfied, so discarding persisted data. Current hosts {}",
             getFullPath(), advisor.adviseReplicates());
         if (isDebugEnabled) {
           logger.debug(
@@ -501,7 +501,7 @@ public class ProxyBucketRegion implements Bucket {
         destroyOfflineData();
       }
 
-      logger.info("{} initializing membership view from peers", getFullPath());
+      logger.info("joris: {} initializing membership view from peers", getFullPath());
       if (isDebugEnabled) {
         logger.debug("{} initializing membership view from peers", getFullPath());
       }

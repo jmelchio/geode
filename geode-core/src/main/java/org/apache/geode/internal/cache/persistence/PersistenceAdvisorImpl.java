@@ -702,8 +702,8 @@ public class PersistenceAdvisorImpl implements InternalPersistenceAdvisor {
 
   @Override
   public PersistentMemberID getPersistentID() {
-    logger.info("persistentMemberView diskStoreID: " + persistentMemberView.getDiskStoreID()
-        + "persistentID: " + persistentMemberView.getMyPersistentID() + "initializingID: "
+    logger.info("joris : persistentMemberView diskStoreID: " + persistentMemberView.getDiskStoreID()
+        + " - persistentID: " + persistentMemberView.getMyPersistentID() + " - initializingID: "
         + persistentMemberView.getMyInitializingID());
     return persistentMemberView.getMyPersistentID();
   }

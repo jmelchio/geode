@@ -1562,6 +1562,7 @@ public class PRHARedundancyProvider {
   }
 
   boolean recoverPersistentBuckets() {
+    logger.info("joris: recoverPersistentBuckets");
     /*
      * To handle a case where ParallelGatewaySender is persistent but userPR is not First recover
      * the GatewaySender buckets for ParallelGatewaySender irrespective of whether colocation is
@@ -1630,7 +1631,10 @@ public class PRHARedundancyProvider {
      *
      */
     for (ProxyBucketRegion proxyBucket : proxyBucketArray) {
+      logger.info("joris: anyProxyBucket: id - " + proxyBucket.getBucketId() + " name - " + proxyBucket.getName()
+          + " path - " + proxyBucket.getFullPath() + " attributes - " + proxyBucket.getAttributes());
       if (proxyBucket.getPersistenceAdvisor().wasHosting()) {
+        logger.info("joris: wasHosting: " + proxyBucket.getBucketId());
         RecoveryRunnable recoveryRunnable = new RecoveryRunnable(this) {
 
           @Override
@@ -1665,8 +1669,8 @@ public class PRHARedundancyProvider {
       // try to recover the local buckets before the proxy buckets. This will allow us to detect
       // any ConflictingDataException before the proxy buckets update their membership view.
       for (ProxyBucketRegion proxyBucket : bucketsHostedLocally) {
-        logger.info("proxyBucket: " + proxyBucket.getBucketId() + " - " + proxyBucket.getName()
-            + " - " + proxyBucket.getFullPath() + " - " + proxyBucket.getAttributes());
+        logger.info("joris: localBucket: id - " + proxyBucket.getBucketId() + " name - " + proxyBucket.getName()
+            + " path - " + proxyBucket.getFullPath() + " attributes - " + proxyBucket.getAttributes());
         proxyBucket.waitForPrimaryPersistentRecovery();
       }
 
@@ -1675,10 +1679,13 @@ public class PRHARedundancyProvider {
       }
 
       for (ProxyBucketRegion proxyBucket : bucketsNotHostedLocally) {
+        logger.info("joris: nonlocalBucket: id - " + proxyBucket.getBucketId() + " name - " + proxyBucket.getName()
+            + " path - " + proxyBucket.getFullPath() + " attributes - " + proxyBucket.getAttributes());
         proxyBucket.recoverFromDiskRecursively();
       }
     } finally {
       if (getPersistentBucketRecoverer() != null) {
+        logger.info("joris: persistentBucketRecoverer countdown ...");
         getPersistentBucketRecoverer().countDown(bucketsNotHostedLocally.size());
       }
     }
