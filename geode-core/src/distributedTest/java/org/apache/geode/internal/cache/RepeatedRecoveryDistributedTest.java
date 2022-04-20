@@ -141,7 +141,8 @@ public class RepeatedRecoveryDistributedTest implements Serializable {
         .create(diskStoreName);
   }
 
-  private void createPartitionedRegion(List<MemberVM> servers, String regionName, String diskStoreName)
+  private void createPartitionedRegion(List<MemberVM> servers, String regionName,
+      String diskStoreName)
       throws InterruptedException {
     List<AsyncInvocation> asyncInvocations = servers.stream()
         .map(server -> server.invokeAsync(() -> createRegion(regionName, diskStoreName)))
@@ -174,7 +175,8 @@ public class RepeatedRecoveryDistributedTest implements Serializable {
     IntStream.range(0, pr.getPartitionAttributes().getTotalNumBuckets()).forEach(bucketID -> {
       try {
         StringBuilder bucketString = new StringBuilder("bucket: " + bucketID);
-        pr.getBucketOwnersForValidation(bucketID).forEach(owner -> bucketString.append(" <member: ").append(owner[0]).append(" isPrimary: ").append(owner[1]).append(">"));
+        pr.getBucketOwnersForValidation(bucketID).forEach(owner -> bucketString.append(" <member: ")
+            .append(owner[0]).append(" isPrimary: ").append(owner[1]).append(">"));
         System.out.println(bucketString);
       } catch (ForceReattemptException e) {
         e.printStackTrace();

@@ -23,6 +23,7 @@ import static org.apache.geode.internal.cache.PartitionedRegionHelper.printColle
 import static org.apache.geode.util.internal.GeodeGlossary.GEMFIRE_PREFIX;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -1563,13 +1564,17 @@ public class PRHARedundancyProvider {
 
   boolean recoverPersistentBuckets() {
     logger.info("joris: recoverPersistentBuckets");
+    StringBuilder stack = new StringBuilder("joris: recover stack: \n");
+    Arrays.stream(Thread.currentThread().getStackTrace())
+        .forEach(stackElement -> stack.append(stackElement.toString()).append("\n"));
+    logger.info(stack);
     /*
      * To handle a case where ParallelGatewaySender is persistent but userPR is not First recover
      * the GatewaySender buckets for ParallelGatewaySender irrespective of whether colocation is
      * complete or not.
      */
     PartitionedRegion leaderRegion = ColocationHelper.getLeaderRegion(partitionedRegion);
-
+    String serverName = leaderRegion.getCache().getInternalDistributedSystem().getName();
 
     // Check if the leader region or some child shadow PR region is persistent
     // and return the first persistent region found
@@ -1631,10 +1636,13 @@ public class PRHARedundancyProvider {
      *
      */
     for (ProxyBucketRegion proxyBucket : proxyBucketArray) {
-      logger.info("joris: anyProxyBucket: id - " + proxyBucket.getBucketId() + " name - " + proxyBucket.getName()
-          + " path - " + proxyBucket.getFullPath() + " attributes - " + proxyBucket.getAttributes());
+      logger.info("joris: anyProxyBucket: id - " + proxyBucket.getBucketId() + " name - "
+          + proxyBucket.getName()
+          + " path - " + proxyBucket.getFullPath() + " attributes - "
+          + proxyBucket.getAttributes());
       if (proxyBucket.getPersistenceAdvisor().wasHosting()) {
-        logger.info("joris: wasHosting: " + proxyBucket.getBucketId());
+        logger.info(
+            "joris: was hosting locally: " + proxyBucket.getBucketId() + " server: " + serverName);
         RecoveryRunnable recoveryRunnable = new RecoveryRunnable(this) {
 
           @Override
@@ -1661,6 +1669,8 @@ public class PRHARedundancyProvider {
         recoveryThread.start();
         bucketsHostedLocally.add(proxyBucket);
       } else {
+        logger.info(
+            "joris: not hosting locally: " + proxyBucket.getBucketId() + " server: " + serverName);
         bucketsNotHostedLocally.add(proxyBucket);
       }
     }
@@ -1669,8 +1679,10 @@ public class PRHARedundancyProvider {
       // try to recover the local buckets before the proxy buckets. This will allow us to detect
       // any ConflictingDataException before the proxy buckets update their membership view.
       for (ProxyBucketRegion proxyBucket : bucketsHostedLocally) {
-        logger.info("joris: localBucket: id - " + proxyBucket.getBucketId() + " name - " + proxyBucket.getName()
-            + " path - " + proxyBucket.getFullPath() + " attributes - " + proxyBucket.getAttributes());
+        logger.info("joris: localBucket: id - " + proxyBucket.getBucketId() + " name - "
+            + proxyBucket.getName()
+            + " path - " + proxyBucket.getFullPath() + " attributes - "
+            + proxyBucket.getAttributes());
         proxyBucket.waitForPrimaryPersistentRecovery();
       }
 
@@ -1679,8 +1691,10 @@ public class PRHARedundancyProvider {
       }
 
       for (ProxyBucketRegion proxyBucket : bucketsNotHostedLocally) {
-        logger.info("joris: nonlocalBucket: id - " + proxyBucket.getBucketId() + " name - " + proxyBucket.getName()
-            + " path - " + proxyBucket.getFullPath() + " attributes - " + proxyBucket.getAttributes());
+        logger.info("joris: nonlocalBucket: id - " + proxyBucket.getBucketId() + " name - "
+            + proxyBucket.getName()
+            + " path - " + proxyBucket.getFullPath() + " attributes - "
+            + proxyBucket.getAttributes());
         proxyBucket.recoverFromDiskRecursively();
       }
     } finally {

@@ -656,9 +656,11 @@ public class PartitionedRegionDataStore implements HasCachePerfStats {
 
       // Don't worry about colocation if we're recovering a persistent
       // bucket. The bucket must have been properly colocated earlier.
+      String serverName = partitionedRegion.getCache().getInternalDistributedSystem().getName();
       if (persistenceAdvisor != null && persistenceAdvisor.wasHosting()) {
         return true;
       }
+      logger.info("joris: Colocation is incomplete");
       if (logger.isDebugEnabled()) {
         logger.debug("Colocation is incomplete");
       }

@@ -407,8 +407,9 @@ public class ProxyBucketRegion implements Bucket {
   }
 
   void recoverFromDiskRecursively() {
-    logger.info("joris: recovering from disk recursively: " + getName() + " - " + getFullPath() + " - "
-        + getAttributes());
+    logger.info(
+        "joris: recovering from disk recursively: " + getName() + " - " + getFullPath() + " - "
+            + getAttributes());
     recoverFromDisk();
 
     List<PartitionedRegion> colocatedWithList =
@@ -425,6 +426,7 @@ public class ProxyBucketRegion implements Bucket {
   }
 
   public void recoverFromDisk() {
+    String serverName = partitionedRegion.getCache().getInternalDistributedSystem().getName();
     final boolean isDebugEnabled = logger.isDebugEnabled();
 
     RuntimeException exception = null;
@@ -433,8 +435,9 @@ public class ProxyBucketRegion implements Bucket {
           persistenceAdvisor.wasHosting());
     }
     if (!persistenceAdvisor.isRecovering()) {
-      logger.info("joris: bailing from recover because persistenceAdvisor.isRecovering() returns false: "
-          + getName() + " - " + getFullPath());
+      logger.info(
+          "joris: bailing from recover because persistenceAdvisor.isRecovering() returns false: "
+              + getName() + " - " + getFullPath());
       return;
     }
     recoverFromDiskCnt++;
@@ -594,6 +597,7 @@ public class ProxyBucketRegion implements Bucket {
     // sure the bucket isn't completely offline
     if (!replaceOfflineData || redundancy == -1) {
       BucketPersistenceAdvisor persistAdvisor = getPersistenceAdvisor();
+      logger.info("joris: offline checking routine - 1");
       if (persistAdvisor != null) {
         // If we haven't finished recovering from disk, don't allow the bucket creation.
         // if(persistAdvisor.isRecovering()) {
@@ -608,6 +612,10 @@ public class ProxyBucketRegion implements Bucket {
             // Fix for 42327 - There must be a race where we are being told to create a bucket
             // before we recover from disk. In that case, the membership view can be null.
             // Refuse to create the bucket if that is the case.
+
+            logger.info(
+                "joris: grabFreeBucket: Can't create bucket because persistence is not yet initialized {}{}{}",
+                partitionedRegion.getPRId(), PartitionedRegion.BUCKET_ID_SEPARATOR, bid);
             if (logger.isDebugEnabled()) {
               logger.debug(
                   "grabFreeBucket: Can't create bucket because persistence is not yet initialized {}{}{}",
@@ -616,6 +624,9 @@ public class ProxyBucketRegion implements Bucket {
             return false;
           }
           Set<PersistentMemberID> offlineMembers = membershipView.getOfflineMembers();
+          logger.info(
+              "joris: We didn't host the bucket. Checking redundancy level before creating the bucket. Redundancy={} offline members={}",
+              redundancy, offlineMembers);
           if (logger.isDebugEnabled()) {
             logger.debug(
                 "We didn't host the bucket. Checking redundancy level before creating the bucket. Redundancy={} offline members={}",
