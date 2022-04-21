@@ -16,6 +16,7 @@ package org.apache.geode.internal.statistics;
 
 import java.io.File;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -116,6 +117,7 @@ public abstract class HostStatSampler
     callbackSampler = new CallbackSampler(stopper, samplerStats);
     this.timer = timer;
     this.logFile = logFile;
+    logger.info("joris: hostStatSampler: " + logFile.toString());
   }
 
   public StatSamplerStats getStatSamplerStats() {
@@ -189,6 +191,7 @@ public abstract class HostStatSampler
    */
   @Override
   public void run() {
+    logger.info("joris: hostStatSampler started");
     final boolean isDebugEnabled_STATISTICS = logger.isTraceEnabled(LogMarker.STATISTICS_VERBOSE);
     if (isDebugEnabled_STATISTICS) {
       logger.trace(LogMarker.STATISTICS_VERBOSE, "HostStatSampler started");

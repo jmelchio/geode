@@ -16,6 +16,7 @@ package org.apache.geode.internal.statistics;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -96,6 +97,8 @@ public class GemFireStatSampler extends HostStatSampler {
     this.statisticsConfig = statisticsConfig;
     this.statisticsManager = statisticsManager;
     this.distributionManager = distributionManager;
+    logger.info("joris: stats: " + statisticsConfig.getStatisticArchiveFile());
+    Arrays.stream(Thread.currentThread().getStackTrace()).forEach(stackTraceElement -> logger.info("joris: stack: " + stackTraceElement));
   }
 
   /**

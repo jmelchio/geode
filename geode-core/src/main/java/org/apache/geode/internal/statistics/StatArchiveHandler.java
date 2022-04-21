@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.logging.log4j.Logger;
@@ -310,6 +311,7 @@ public class StatArchiveHandler implements SampleHandler {
       if (!disabledArchiving) {
         disabledArchiving = true;
         logger.info(LogMarker.STATISTICS_MARKER, "Disabling statistic archival.");
+        Arrays.stream(Thread.currentThread().getStackTrace()).forEach(stackTraceElement -> logger.info("joris: stack: " + stackTraceElement));
       }
     } else {
       disabledArchiving = false;

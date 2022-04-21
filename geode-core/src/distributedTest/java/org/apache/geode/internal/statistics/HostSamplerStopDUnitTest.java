@@ -107,6 +107,15 @@ public class HostSamplerStopDUnitTest {
             .getInternalDistributedSystem().getStatSampler().getSampleCollector() != null),
         serverVM1);
 
+    serverVM1.invokeAsync(() -> {
+      GemFireStatSampler
+          statSampler =
+          ClusterStartupRule.getCache().getInternalDistributedSystem().getStatSampler();
+      System.out.println("joris: sampler class: " + statSampler.getClass().getName());
+      Thread statThread = new Thread(statSampler);
+      statThread.start();
+    });
+    
     clientCacheRule
         .withPoolSubscription(true)
         .withLocatorConnection(locatorPort);
@@ -136,8 +145,6 @@ public class HostSamplerStopDUnitTest {
 
     Thread.sleep(35000);
     VMProvider.invokeInEveryMember(() -> {
-      InternalDistributedSystem internalDistributedSystem =
-          ClusterStartupRule.getCache().getInternalDistributedSystem();
       ResourceManagerStats resourceManagerStats =
           ClusterStartupRule.getCache().getInternalResourceManager().getStats();
       System.out.println("[" + DATE_TIME_INSTANCE.format(new Date(System.currentTimeMillis()))
@@ -146,8 +153,6 @@ public class HostSamplerStopDUnitTest {
 
     Thread.sleep(35000);
     VMProvider.invokeInEveryMember(() -> {
-      InternalDistributedSystem internalDistributedSystem =
-          ClusterStartupRule.getCache().getInternalDistributedSystem();
       ResourceManagerStats resourceManagerStats =
           ClusterStartupRule.getCache().getInternalResourceManager().getStats();
       System.out.println("[" + DATE_TIME_INSTANCE.format(new Date(System.currentTimeMillis()))
