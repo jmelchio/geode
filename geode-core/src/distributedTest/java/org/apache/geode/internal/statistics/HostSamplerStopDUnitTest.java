@@ -115,7 +115,7 @@ public class HostSamplerStopDUnitTest {
       Thread statThread = new Thread(statSampler);
       statThread.start();
     });
-    
+
     clientCacheRule
         .withPoolSubscription(true)
         .withLocatorConnection(locatorPort);
