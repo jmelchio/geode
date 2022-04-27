@@ -17,6 +17,7 @@
 package org.apache.geode.cache.client;
 
 import java.util.List;
+import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -26,10 +27,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.apache.geode.cache.CacheFactory;
 import org.apache.geode.cache.PartitionAttributesFactory;
 import org.apache.geode.cache.Region;
 import org.apache.geode.cache.RegionFactory;
 import org.apache.geode.cache.RegionShortcut;
+import org.apache.geode.distributed.internal.InternalDistributedSystem;
 import org.apache.geode.internal.cache.InternalCache;
 import org.apache.geode.test.awaitility.GeodeAwaitility;
 import org.apache.geode.test.dunit.AsyncInvocation;
@@ -43,6 +46,8 @@ public class ClientConnectionRestoreDUnitTest {
   private static final String REGION_REPLICATE_BASENAME = "regionReplicate";
   private static final String REGION_PARTITION_BASENAME = "regionPartition";
   private ClientVM[] clientVMS;
+  private int locator0Port;
+  private int locator1Port;
   private static final int KEY_SET_SIZE = 100000;
 
   @Rule
@@ -53,29 +58,32 @@ public class ClientConnectionRestoreDUnitTest {
   @Before
   public void init() throws Exception {
     MemberVM locator0 = clusterStartupRule.startLocatorVM(0, MemberStarterRule::withAutoStart);
-    int locator0Port = locator0.getPort();
+    locator0Port = locator0.getPort();
     MemberVM locator1 = clusterStartupRule.startLocatorVM(1, null, locator0Port);
-    int locator1Port = locator1.getPort();
+    locator1Port = locator1.getPort();
 
     MemberVM server0 = clusterStartupRule.startServerVM(2, locator0Port, locator1Port);
     MemberVM server1 = clusterStartupRule.startServerVM(3, locator0Port, locator1Port);
     server2 = clusterStartupRule.startServerVM(4, locator0Port, locator1Port);
 
+    int l0Port = locator0Port;
+    int l1Port = locator1Port;
+
     ClientVM client0 =
         clusterStartupRule.startClientVM(5,
-            clientCacheRule -> clientCacheRule.withLocatorConnection(locator0Port, locator1Port));
+            clientCacheRule -> clientCacheRule.withLocatorConnection(l0Port, l1Port));
     ClientVM client1 =
         clusterStartupRule.startClientVM(6,
-            clientCacheRule -> clientCacheRule.withLocatorConnection(locator0Port, locator1Port));
+            clientCacheRule -> clientCacheRule.withLocatorConnection(l0Port, l1Port));
     ClientVM client2 =
         clusterStartupRule.startClientVM(7,
-            clientCacheRule -> clientCacheRule.withLocatorConnection(locator0Port, locator1Port));
+            clientCacheRule -> clientCacheRule.withLocatorConnection(l0Port, l1Port));
     ClientVM client3 =
         clusterStartupRule.startClientVM(8,
-            clientCacheRule -> clientCacheRule.withLocatorConnection(locator0Port, locator1Port));
+            clientCacheRule -> clientCacheRule.withLocatorConnection(l0Port, l1Port));
     ClientVM client4 =
         clusterStartupRule.startClientVM(9,
-            clientCacheRule -> clientCacheRule.withLocatorConnection(locator0Port, locator1Port));
+            clientCacheRule -> clientCacheRule.withLocatorConnection(l0Port, l1Port));
 
     clientVMS = new ClientVM[5];
     clientVMS[0] = client0;
@@ -129,8 +137,25 @@ public class ClientConnectionRestoreDUnitTest {
       throw new RuntimeException(e);
     }
 
-    // disconnect server, will attempt to reconnect after 5 seconds
-    server2.forceDisconnect();
+    // disconnect server
+    String serverName = server2.invoke(() -> {
+      InternalDistributedSystem internalDistributedSystem =
+          ClusterStartupRule.getCache().getInternalDistributedSystem();
+      String sName = internalDistributedSystem.getName();
+      internalDistributedSystem.disconnect();
+      return sName;
+    });
+
+    int l0Port = locator0Port;
+    int l1Port = locator1Port;
+
+    // re-create the cache on the server
+    server2.invoke(() -> {
+      Properties properties = new Properties();
+      properties.put("name", serverName);
+      properties.put("locators", "localhost[" + l0Port + "],localhost[" + l1Port + "]");
+      new CacheFactory(properties).create();
+    });
 
     try {
       Thread.sleep(8000);
