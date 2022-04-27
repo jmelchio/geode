@@ -61,24 +61,19 @@ public class ClientConnectionRestoreDUnitTest {
     MemberVM server1 = clusterStartupRule.startServerVM(3, locator0Port, locator1Port);
     server2 = clusterStartupRule.startServerVM(4, locator0Port, locator1Port);
 
-    ClientVM
-        client0 =
+    ClientVM client0 =
         clusterStartupRule.startClientVM(5,
             clientCacheRule -> clientCacheRule.withLocatorConnection(locator0Port, locator1Port));
-    ClientVM
-        client1 =
+    ClientVM client1 =
         clusterStartupRule.startClientVM(6,
             clientCacheRule -> clientCacheRule.withLocatorConnection(locator0Port, locator1Port));
-    ClientVM
-        client2 =
+    ClientVM client2 =
         clusterStartupRule.startClientVM(7,
             clientCacheRule -> clientCacheRule.withLocatorConnection(locator0Port, locator1Port));
-    ClientVM
-        client3 =
+    ClientVM client3 =
         clusterStartupRule.startClientVM(8,
             clientCacheRule -> clientCacheRule.withLocatorConnection(locator0Port, locator1Port));
-    ClientVM
-        client4 =
+    ClientVM client4 =
         clusterStartupRule.startClientVM(9,
             clientCacheRule -> clientCacheRule.withLocatorConnection(locator0Port, locator1Port));
 
@@ -94,12 +89,14 @@ public class ClientConnectionRestoreDUnitTest {
       InternalCache cache = ClusterStartupRule.getCache();
 
       IntStream.range(0, 5).forEach(count -> {
-        RegionFactory<Integer, Integer> replicateRegionFactory = cache.createRegionFactory(RegionShortcut.REPLICATE);
+        RegionFactory<Integer, Integer> replicateRegionFactory =
+            cache.createRegionFactory(RegionShortcut.REPLICATE);
         replicateRegionFactory.create(REGION_REPLICATE_BASENAME + count);
 
         PartitionAttributesFactory<Integer, Integer> paf = new PartitionAttributesFactory<>();
         paf.setRedundantCopies(1);
-        cache.createRegionFactory(RegionShortcut.PARTITION).setPartitionAttributes(paf.create()).create(REGION_PARTITION_BASENAME + count);
+        cache.createRegionFactory(RegionShortcut.PARTITION).setPartitionAttributes(paf.create())
+            .create(REGION_PARTITION_BASENAME + count);
       });
       System.out.println("joris: serverName: " + cache.getInternalDistributedSystem().getName());
     }, server0, server1, server2);
@@ -107,8 +104,10 @@ public class ClientConnectionRestoreDUnitTest {
     // on each client create the proxies for the regions they are interested in
     IntStream.range(0, 5).forEach(count -> clientVMS[count].invoke(() -> {
       ClientCache clientCache = ClusterStartupRule.getClientCache();
-      clientCache.createClientRegionFactory(ClientRegionShortcut.PROXY).create(REGION_PARTITION_BASENAME + count);
-      clientCache.createClientRegionFactory(ClientRegionShortcut.PROXY).create(REGION_REPLICATE_BASENAME + count);
+      clientCache.createClientRegionFactory(ClientRegionShortcut.PROXY)
+          .create(REGION_PARTITION_BASENAME + count);
+      clientCache.createClientRegionFactory(ClientRegionShortcut.PROXY)
+          .create(REGION_REPLICATE_BASENAME + count);
     }));
 
   }
@@ -139,7 +138,8 @@ public class ClientConnectionRestoreDUnitTest {
       throw new RuntimeException(e);
     }
 
-    GeodeAwaitility.await().until(() -> clientRegionInvocations.stream().allMatch(AsyncInvocation::isDone));
+    GeodeAwaitility.await()
+        .until(() -> clientRegionInvocations.stream().allMatch(AsyncInvocation::isDone));
     for (AsyncInvocation asyncInvocation : clientRegionInvocations) {
       Assertions.assertThatNoException().isThrownBy(asyncInvocation::get);
     }
@@ -167,11 +167,13 @@ public class ClientConnectionRestoreDUnitTest {
           partitionRegion.put(key, value);
         } catch (Throwable unexpected) {
           // Report the unexpected exception and stop doing operations.
-          System.out.println("joris: exception " + "key: " + key + " [client" + count + "] " + unexpected);
+          System.out.println(
+              "joris: exception " + "key: " + key + " [client" + count + "] " + unexpected);
           throw unexpected;
         }
       } while (System.currentTimeMillis() < run_until);
-      System.out.println("joris: finished " + "key: " + key + " [client" + count + "]" + " [region: " + regionName + "]");
+      System.out.println("joris: finished " + "key: " + key + " [client" + count + "]"
+          + " [region: " + regionName + "]");
     })).collect(Collectors.toList());
   }
 }
