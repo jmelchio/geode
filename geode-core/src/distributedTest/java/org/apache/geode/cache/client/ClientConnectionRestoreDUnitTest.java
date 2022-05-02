@@ -45,10 +45,11 @@ import org.apache.geode.test.junit.rules.VMProvider;
 public class ClientConnectionRestoreDUnitTest {
   private static final String REGION_REPLICATE_BASENAME = "regionReplicate";
   private static final String REGION_PARTITION_BASENAME = "regionPartition";
+  private static final String LOG_PREFIX = "GEM-3617";
   private ClientVM[] clientVMS;
   private int locator0Port;
   private int locator1Port;
-  private static final int KEY_SET_SIZE = 100000;
+  private static final int KEY_SET_SIZE = 10000;
 
   @Rule
   public ClusterStartupRule clusterStartupRule = new ClusterStartupRule(10);
@@ -106,7 +107,8 @@ public class ClientConnectionRestoreDUnitTest {
         cache.createRegionFactory(RegionShortcut.PARTITION).setPartitionAttributes(paf.create())
             .create(REGION_PARTITION_BASENAME + count);
       });
-      System.out.println("joris: serverName: " + cache.getInternalDistributedSystem().getName());
+      System.out
+          .println(LOG_PREFIX + ": serverName: " + cache.getInternalDistributedSystem().getName());
     }, server0, server1, server2);
 
     // on each client create the proxies for the regions they are interested in
@@ -131,6 +133,7 @@ public class ClientConnectionRestoreDUnitTest {
     List<AsyncInvocation> clientRegionInvocations = startPuts(REGION_PARTITION_BASENAME);
     clientRegionInvocations.addAll(startPuts(REGION_REPLICATE_BASENAME));
 
+    long startTS = System.currentTimeMillis();
     try {
       Thread.sleep(5000);
     } catch (InterruptedException e) {
@@ -178,9 +181,9 @@ public class ClientConnectionRestoreDUnitTest {
       Region<Integer, Integer> partitionRegion = clientCache.getRegion(regionName);
       int key = -1;
       Integer value;
-      long run_until = System.currentTimeMillis() + 15000;
+      long run_until = System.currentTimeMillis() + 20000;
 
-      System.out.println("joris: start " + "[client" + count + "]");
+      System.out.println(LOG_PREFIX + ": start " + "[client" + count + "]");
       do {
         key = (key + 1) % KEY_SET_SIZE;
         try {
@@ -193,11 +196,11 @@ public class ClientConnectionRestoreDUnitTest {
         } catch (Throwable unexpected) {
           // Report the unexpected exception and stop doing operations.
           System.out.println(
-              "joris: exception " + "key: " + key + " [client" + count + "] " + unexpected);
+              LOG_PREFIX + ": exception key: " + key + " [client" + count + "] " + unexpected);
           throw unexpected;
         }
       } while (System.currentTimeMillis() < run_until);
-      System.out.println("joris: finished " + "key: " + key + " [client" + count + "]"
+      System.out.println(LOG_PREFIX + ": finished " + "key: " + key + " [client" + count + "]"
           + " [region: " + regionName + "]");
     })).collect(Collectors.toList());
   }
