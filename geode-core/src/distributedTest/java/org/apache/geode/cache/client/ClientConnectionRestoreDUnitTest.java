@@ -16,6 +16,10 @@
 
 package org.apache.geode.cache.client;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -36,6 +40,7 @@ import org.apache.geode.distributed.internal.InternalDistributedSystem;
 import org.apache.geode.internal.cache.InternalCache;
 import org.apache.geode.test.awaitility.GeodeAwaitility;
 import org.apache.geode.test.dunit.AsyncInvocation;
+import org.apache.geode.test.dunit.SerializableConsumerIF;
 import org.apache.geode.test.dunit.rules.ClientVM;
 import org.apache.geode.test.dunit.rules.ClusterStartupRule;
 import org.apache.geode.test.dunit.rules.MemberVM;
@@ -50,11 +55,14 @@ public class ClientConnectionRestoreDUnitTest {
   private int locator0Port;
   private int locator1Port;
   private static final int KEY_SET_SIZE = 10000;
+  private static final int READ_TIMEOUT = 10000;
 
   @Rule
   public ClusterStartupRule clusterStartupRule = new ClusterStartupRule(10);
 
   private MemberVM server2;
+  private MemberVM server1;
+  private MemberVM server0;
 
   @Before
   public void init() throws Exception {
@@ -63,28 +71,31 @@ public class ClientConnectionRestoreDUnitTest {
     MemberVM locator1 = clusterStartupRule.startLocatorVM(1, null, locator0Port);
     locator1Port = locator1.getPort();
 
-    MemberVM server0 = clusterStartupRule.startServerVM(2, locator0Port, locator1Port);
-    MemberVM server1 = clusterStartupRule.startServerVM(3, locator0Port, locator1Port);
+    server0 = clusterStartupRule.startServerVM(2, locator0Port, locator1Port);
+    server1 = clusterStartupRule.startServerVM(3, locator0Port, locator1Port);
     server2 = clusterStartupRule.startServerVM(4, locator0Port, locator1Port);
 
     int l0Port = locator0Port;
     int l1Port = locator1Port;
 
+    SerializableConsumerIF<ClientCacheFactory> cacheSetup = cf -> {
+      cf.addPoolLocator("localhost", l0Port);
+      cf.addPoolLocator("localhost", l1Port);
+      // cf.setPoolReadTimeout(READ_TIMEOUT);
+    };
+
+    Properties clientProps = new Properties();
+
     ClientVM client0 =
-        clusterStartupRule.startClientVM(5,
-            clientCacheRule -> clientCacheRule.withLocatorConnection(l0Port, l1Port));
+        clusterStartupRule.startClientVM(5, clientProps, cacheSetup);
     ClientVM client1 =
-        clusterStartupRule.startClientVM(6,
-            clientCacheRule -> clientCacheRule.withLocatorConnection(l0Port, l1Port));
+        clusterStartupRule.startClientVM(6, clientProps, cacheSetup);
     ClientVM client2 =
-        clusterStartupRule.startClientVM(7,
-            clientCacheRule -> clientCacheRule.withLocatorConnection(l0Port, l1Port));
+        clusterStartupRule.startClientVM(7, clientProps, cacheSetup);
     ClientVM client3 =
-        clusterStartupRule.startClientVM(8,
-            clientCacheRule -> clientCacheRule.withLocatorConnection(l0Port, l1Port));
+        clusterStartupRule.startClientVM(8, clientProps, cacheSetup);
     ClientVM client4 =
-        clusterStartupRule.startClientVM(9,
-            clientCacheRule -> clientCacheRule.withLocatorConnection(l0Port, l1Port));
+        clusterStartupRule.startClientVM(9, clientProps, cacheSetup);
 
     clientVMS = new ClientVM[5];
     clientVMS[0] = client0;
@@ -145,6 +156,7 @@ public class ClientConnectionRestoreDUnitTest {
       InternalDistributedSystem internalDistributedSystem =
           ClusterStartupRule.getCache().getInternalDistributedSystem();
       String sName = internalDistributedSystem.getName();
+      internalDistributedSystem.getCache().close();
       internalDistributedSystem.disconnect();
       return sName;
     });
@@ -168,6 +180,13 @@ public class ClientConnectionRestoreDUnitTest {
 
     GeodeAwaitility.await()
         .until(() -> clientRegionInvocations.stream().allMatch(AsyncInvocation::isDone));
+
+    boolean exceptionOccurred = clientRegionInvocations.stream().anyMatch(asyncInvocation -> asyncInvocation.exceptionOccurred());
+    if (exceptionOccurred) {
+      System.out.println(LOG_PREFIX + " stuff happened");
+      dumpThreads();
+    }
+
     for (AsyncInvocation asyncInvocation : clientRegionInvocations) {
       Assertions.assertThatNoException().isThrownBy(asyncInvocation::get);
     }
@@ -175,9 +194,10 @@ public class ClientConnectionRestoreDUnitTest {
 
   private List<AsyncInvocation> startPuts(String regionType) {
 
-    return IntStream.range(0, 5).mapToObj(count -> clientVMS[count].invokeAsync(() -> {
+    List<AsyncInvocation> invocations = IntStream.range(0, 5).mapToObj(count -> clientVMS[count].invokeAsync(() -> {
       String regionName = regionType + count;
       ClientCache clientCache = ClusterStartupRule.getClientCache();
+      System.out.println(LOG_PREFIX + " readTimeout: " + clientCache.getDefaultPool().getReadTimeout());
       Region<Integer, Integer> partitionRegion = clientCache.getRegion(regionName);
       int key = -1;
       Integer value;
@@ -203,5 +223,33 @@ public class ClientConnectionRestoreDUnitTest {
       System.out.println(LOG_PREFIX + ": finished " + "key: " + key + " [client" + count + "]"
           + " [region: " + regionName + "]");
     })).collect(Collectors.toList());
+
+    return invocations;
   }
+
+  private void dumpThreads() {
+    VMProvider.invokeInEveryMember(() -> {
+      StringBuilder stringBuilder = new StringBuilder(ClusterStartupRule.getCache().getInternalDistributedSystem().getName()).append("\n");
+      final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+      final ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), 100);
+      System.out.println(LOG_PREFIX + " dumping threads");
+
+      Arrays.stream(threadInfos).forEach(threadInfo -> {
+        stringBuilder.append("<")
+            .append(threadInfo.getThreadName())
+            .append(">")
+            .append(" Thread State:")
+            .append(threadInfo.getThreadState())
+            .append("\n");
+        Arrays.stream(threadInfo.getStackTrace()).forEach(stackTraceElement -> stringBuilder
+            .append("  ")
+            .append(stackTraceElement)
+            .append("\n"));
+        stringBuilder.append("\n");
+      });
+
+      System.out.println(stringBuilder);
+    }, server0, server1, server2);
+  }
+
 }
