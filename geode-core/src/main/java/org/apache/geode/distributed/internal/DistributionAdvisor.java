@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.Logger;
 
@@ -1311,6 +1313,11 @@ public class DistributionAdvisor {
     profiles = newProfiles; // volatile write
     profilesVersion++;
     setNumActiveProfiles(newProfiles.length);
+    String memberString = Arrays.stream(newProfiles)
+        .map(profile -> "member=".concat(profile.peerMemberId.getName()).concat(" host=")
+            .concat(profile.peerMemberId.getHostName()).concat(";"))
+        .collect(Collectors.joining());
+    logger.info("basicAddProfile profile=" + p + " allProfiles=" + memberString);
 
     return true;
   }
@@ -1322,11 +1329,20 @@ public class DistributionAdvisor {
     // must synchronize when modifying profile array
 
     int i = indexOfMemberId(id);
+    Profile removedProfile = null;
     if (i >= 0) {
+      logger.info("indexOfMemberId found in basicRemoveMemberId");
       Profile profileRemoved = profiles[i];
+      removedProfile = profileRemoved;
       basicRemoveIndex(i);
       return profileRemoved;
     }
+    String memberString = Arrays.stream(profiles)
+        .map(profile -> "member=".concat(profile.peerMemberId.getName()).concat(" host=")
+            .concat(profile.peerMemberId.getHostName()).concat(";"))
+        .collect(Collectors.joining());
+    logger.info("basicRemoveMemberId profileId=" + id + " removedProfile=" + removedProfile
+        + " allProfiles=" + memberString);
     return null;
 
   }
@@ -1342,6 +1358,7 @@ public class DistributionAdvisor {
         }
       } else {
         if (p.getId().equals(id)) {
+          logger.info("indexOfMemberId found");
           return i;
         }
       }

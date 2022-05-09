@@ -473,6 +473,8 @@ public class BucketAdvisor extends CacheDistributionAdvisor {
     }
     updateRedundancy();
 
+    logger.info("Profile removed {} the member lost {} Profile : {}", getBucket().getFullPath(),
+        profile != null ? profile.getDistributedMember() : null, profile);
     if (logger.isDebugEnabled()) {
       logger.debug("Profile removed {} the member lost {} Profile : {}", getBucket().getFullPath(),
           profile != null ? profile.getDistributedMember() : null, profile);
@@ -512,6 +514,9 @@ public class BucketAdvisor extends CacheDistributionAdvisor {
     // the bucket, finish the bucket creation.
     ProfileId elector = primaryElector;
     if (elector != null && elector.equals(profile.getDistributedMember())) {
+      logger.info(
+          "Bucket {} lost the member responsible for electing the primary. Finishing bucket creation",
+          getBucket().getFullPath());
       if (logger.isDebugEnabled()) {
         logger.debug(
             "Bucket {} lost the member responsible for electing the primary. Finishing bucket creation",
@@ -1385,18 +1390,22 @@ public class BucketAdvisor extends CacheDistributionAdvisor {
 
           if (getBucketRedundancy() == -1) {
             // there are no real buckets in other vms... no reason to wait
+            logger.info("waitForPrimaryMember break redundancy -1");
             return null;
           }
           getProxyBucketRegion().getPartitionedRegion().checkReadiness();
           if (isClosed()) {
+            logger.info("waitForPrimaryMember break isClosed");
             break;
           }
           long elapsed = timer.elapsedTimeMillis();
           long timeLeft = timeout - elapsed;
           if (timeLeft <= 0) {
+            logger.info("waitForPrimaryMember break no wait time left");
             break;
           }
           if (getBucketRedundancy() == -1 || isClosed()) {
+            logger.info("waitForPrimaryMember break redundancy -1 or isClosed");
             break; // early out... all bucket regions are gone or we closed
           }
           InternalDistributedMember primary = basicGetPrimaryMember();
@@ -2452,6 +2461,7 @@ public class BucketAdvisor extends CacheDistributionAdvisor {
       boolean dlsDestroyed = false;
       try {
 
+        logger.info("Begin volunteerForPrimary for {}", BucketAdvisor.this);
         if (logger.isDebugEnabled()) {
           logger.debug("Begin volunteerForPrimary for {}", BucketAdvisor.this);
         }
