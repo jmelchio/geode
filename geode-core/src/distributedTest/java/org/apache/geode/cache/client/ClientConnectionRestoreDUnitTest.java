@@ -114,7 +114,7 @@ public class ClientConnectionRestoreDUnitTest {
         replicateRegionFactory.create(REGION_REPLICATE_BASENAME + count);
 
         PartitionAttributesFactory<Integer, Integer> paf = new PartitionAttributesFactory<>();
-        paf.setRedundantCopies(1);
+        paf.setRedundantCopies(2);
         cache.createRegionFactory(RegionShortcut.PARTITION).setPartitionAttributes(paf.create())
             .create(REGION_PARTITION_BASENAME + count);
       });
@@ -160,6 +160,12 @@ public class ClientConnectionRestoreDUnitTest {
       internalDistributedSystem.disconnect();
       return sName;
     });
+
+    try {
+      Thread.sleep(4000);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
 
     int l0Port = locator0Port;
     int l1Port = locator1Port;
