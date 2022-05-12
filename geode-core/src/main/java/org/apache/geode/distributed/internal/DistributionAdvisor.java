@@ -1313,11 +1313,6 @@ public class DistributionAdvisor {
     profiles = newProfiles; // volatile write
     profilesVersion++;
     setNumActiveProfiles(newProfiles.length);
-    String memberString = Arrays.stream(newProfiles)
-        .map(profile -> "member=".concat(profile.peerMemberId.getName()).concat(" host=")
-            .concat(profile.peerMemberId.getHostName()).concat(";"))
-        .collect(Collectors.joining());
-    logger.info("basicAddProfile profile=" + p + " allProfiles=" + memberString);
 
     return true;
   }
@@ -1329,20 +1324,11 @@ public class DistributionAdvisor {
     // must synchronize when modifying profile array
 
     int i = indexOfMemberId(id);
-    Profile removedProfile = null;
     if (i >= 0) {
-      logger.info("indexOfMemberId found in basicRemoveMemberId");
       Profile profileRemoved = profiles[i];
-      removedProfile = profileRemoved;
       basicRemoveIndex(i);
       return profileRemoved;
     }
-    String memberString = Arrays.stream(profiles)
-        .map(profile -> "member=".concat(profile.peerMemberId.getName()).concat(" host=")
-            .concat(profile.peerMemberId.getHostName()).concat(";"))
-        .collect(Collectors.joining());
-    logger.info("basicRemoveMemberId profileId=" + id + " removedProfile=" + removedProfile
-        + " allProfiles=" + memberString);
     return null;
 
   }
@@ -1358,7 +1344,6 @@ public class DistributionAdvisor {
         }
       } else {
         if (p.getId().equals(id)) {
-          logger.info("indexOfMemberId found");
           return i;
         }
       }

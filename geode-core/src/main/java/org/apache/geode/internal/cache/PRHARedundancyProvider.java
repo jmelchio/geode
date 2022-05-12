@@ -705,6 +705,15 @@ public class PRHARedundancyProvider {
             int expectedRemoteHosts = acceptedMembers.size()
                 - (acceptedMembers.contains(partitionedRegion.getMyId()) ? 1 : 0);
 
+            logger.info("GEM-3617"
+                + " tid="
+                + Thread.currentThread().getId()
+                + " bucketId="
+                + bucketId
+                + " remote hosts: "
+                + expectedRemoteHosts
+                + " acceptedMembers: "
+                + acceptedMembers);
             boolean interrupted = Thread.interrupted();
             try {
               BucketMembershipObserverResults results = observer
@@ -744,6 +753,7 @@ public class PRHARedundancyProvider {
       } catch (PartitionOfflineException e) {
         throw e;
       } catch (RuntimeException e) {
+        logger.info("Unable to create new bucket {}: {}", bucketId, e.getMessage(), e);
         if (isDebugEnabled) {
           logger.debug("Unable to create new bucket {}: {}", bucketId, e.getMessage(), e);
         }
@@ -2001,6 +2011,7 @@ public class PRHARedundancyProvider {
             departures.set(false);
 
             if (problematicDeparture) {
+              logger.info("Bucket observer found departed members - retrying");
               if (logger.isDebugEnabled()) {
                 logger.debug("Bucket observer found departed members - retrying");
               }
@@ -2015,6 +2026,8 @@ public class PRHARedundancyProvider {
             break;
           }
 
+          logger.info("Waiting for bucket {} to finish being created",
+              partitionedRegion.bucketStringForLogs(bucketToMonitor.getId()));
           if (logger.isDebugEnabled()) {
             logger.debug("Waiting for bucket {} to finish being created",
                 partitionedRegion.bucketStringForLogs(bucketToMonitor.getId()));

@@ -1379,6 +1379,7 @@ public class BucketAdvisor extends CacheDistributionAdvisor {
       StopWatch timer = new StopWatch(true);
       long warnTime = getDistributionManager().getConfig().getAckWaitThreshold() * 1000L;
       boolean loggedWarning = false;
+      long tid = Thread.currentThread().getId();
       try {
         for (;;) {
           // bail out if the system starts closing
@@ -1395,17 +1396,17 @@ public class BucketAdvisor extends CacheDistributionAdvisor {
           }
           getProxyBucketRegion().getPartitionedRegion().checkReadiness();
           if (isClosed()) {
-            logger.info("waitForPrimaryMember break isClosed");
+            logger.info("waitForPrimaryMember break region isClosed tid=" + tid);
             break;
           }
           long elapsed = timer.elapsedTimeMillis();
           long timeLeft = timeout - elapsed;
           if (timeLeft <= 0) {
-            logger.info("waitForPrimaryMember break no wait time left");
+            logger.info("waitForPrimaryMember break no wait time left tid=" + tid);
             break;
           }
           if (getBucketRedundancy() == -1 || isClosed()) {
-            logger.info("waitForPrimaryMember break redundancy -1 or isClosed");
+            logger.info("waitForPrimaryMember break redundancy -1 or isClosed tid=" + tid);
             break; // early out... all bucket regions are gone or we closed
           }
           InternalDistributedMember primary = basicGetPrimaryMember();
@@ -1413,6 +1414,7 @@ public class BucketAdvisor extends CacheDistributionAdvisor {
             return primary;
           }
 
+          logger.info("Waiting for bucket {}. Time left :{} ms tid={}", this, timeLeft, tid);
           if (logger.isDebugEnabled()) {
             logger.debug("Waiting for bucket {}. Time left :{} ms", this, timeLeft);
           }
@@ -1439,7 +1441,7 @@ public class BucketAdvisor extends CacheDistributionAdvisor {
       } finally {
         if (loggedWarning) {
           logger.info(
-              "Wait for primary completed");
+              "Wait for primary completed tid=" + tid);
         }
       }
       return null;

@@ -114,7 +114,7 @@ public class ClientConnectionRestoreDUnitTest {
         replicateRegionFactory.create(REGION_REPLICATE_BASENAME + count);
 
         PartitionAttributesFactory<Integer, Integer> paf = new PartitionAttributesFactory<>();
-        paf.setRedundantCopies(2);
+        paf.setRedundantCopies(1);
         cache.createRegionFactory(RegionShortcut.PARTITION).setPartitionAttributes(paf.create())
             .create(REGION_PARTITION_BASENAME + count);
       });
@@ -244,6 +244,8 @@ public class ClientConnectionRestoreDUnitTest {
         stringBuilder.append("<")
             .append(threadInfo.getThreadName())
             .append(">")
+            .append(" tid=")
+            .append(threadInfo.getThreadId())
             .append(" Thread State:")
             .append(threadInfo.getThreadState())
             .append("\n");
