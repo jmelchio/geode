@@ -58,8 +58,10 @@ public class ClientConnectionRestoreDUnitTest {
   private static final int READ_TIMEOUT = 10000;
 
   @Rule
-  public ClusterStartupRule clusterStartupRule = new ClusterStartupRule(10);
+  public ClusterStartupRule clusterStartupRule = new ClusterStartupRule(11);
 
+  private MemberVM server4;
+  private MemberVM server3;
   private MemberVM server2;
   private MemberVM server1;
   private MemberVM server0;
@@ -74,6 +76,8 @@ public class ClientConnectionRestoreDUnitTest {
     server0 = clusterStartupRule.startServerVM(2, locator0Port, locator1Port);
     server1 = clusterStartupRule.startServerVM(3, locator0Port, locator1Port);
     server2 = clusterStartupRule.startServerVM(4, locator0Port, locator1Port);
+    server3 = clusterStartupRule.startServerVM(5, locator0Port, locator1Port);
+    server4 = clusterStartupRule.startServerVM(6, locator0Port, locator1Port);
 
     int l0Port = locator0Port;
     int l1Port = locator1Port;
@@ -87,9 +91,9 @@ public class ClientConnectionRestoreDUnitTest {
     Properties clientProps = new Properties();
 
     ClientVM client0 =
-        clusterStartupRule.startClientVM(5, clientProps, cacheSetup);
+        clusterStartupRule.startClientVM(10, clientProps, cacheSetup);
     ClientVM client1 =
-        clusterStartupRule.startClientVM(6, clientProps, cacheSetup);
+        clusterStartupRule.startClientVM(11, clientProps, cacheSetup);
     ClientVM client2 =
         clusterStartupRule.startClientVM(7, clientProps, cacheSetup);
     ClientVM client3 =
@@ -120,7 +124,7 @@ public class ClientConnectionRestoreDUnitTest {
       });
       System.out
           .println(LOG_PREFIX + ": serverName: " + cache.getInternalDistributedSystem().getName());
-    }, server0, server1, server2);
+    }, server0, server1, server2, server3, server4);
 
     // on each client create the proxies for the regions they are interested in
     IntStream.range(0, 5).forEach(count -> clientVMS[count].invoke(() -> {
@@ -257,7 +261,7 @@ public class ClientConnectionRestoreDUnitTest {
       });
 
       System.out.println(stringBuilder);
-    }, server0, server1, server2);
+    }, server0, server1, server2, server3, server4);
   }
 
 }

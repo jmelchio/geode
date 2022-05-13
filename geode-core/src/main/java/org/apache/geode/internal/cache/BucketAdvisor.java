@@ -1380,6 +1380,7 @@ public class BucketAdvisor extends CacheDistributionAdvisor {
       long warnTime = getDistributionManager().getConfig().getAckWaitThreshold() * 1000L;
       boolean loggedWarning = false;
       long tid = Thread.currentThread().getId();
+      long randomInterval = 8000L;
       try {
         for (;;) {
           // bail out if the system starts closing
@@ -1430,6 +1431,7 @@ public class BucketAdvisor extends CacheDistributionAdvisor {
               // log a warning;
               loggedWarning = true;
             } else {
+              randomInterval = Math.min(randomInterval, timeLeft);
               timeLeft = timeLeft > timeUntilWarning ? timeUntilWarning : timeLeft;
             }
           }
