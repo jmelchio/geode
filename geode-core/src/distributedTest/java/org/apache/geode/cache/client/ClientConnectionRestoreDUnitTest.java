@@ -60,8 +60,8 @@ public class ClientConnectionRestoreDUnitTest {
   @Rule
   public ClusterStartupRule clusterStartupRule = new ClusterStartupRule(11);
 
-  private MemberVM server4;
-  private MemberVM server3;
+//  private MemberVM server4;
+//  private MemberVM server3;
   private MemberVM server2;
   private MemberVM server1;
   private MemberVM server0;
@@ -76,8 +76,8 @@ public class ClientConnectionRestoreDUnitTest {
     server0 = clusterStartupRule.startServerVM(2, locator0Port, locator1Port);
     server1 = clusterStartupRule.startServerVM(3, locator0Port, locator1Port);
     server2 = clusterStartupRule.startServerVM(4, locator0Port, locator1Port);
-    server3 = clusterStartupRule.startServerVM(5, locator0Port, locator1Port);
-    server4 = clusterStartupRule.startServerVM(6, locator0Port, locator1Port);
+//    server3 = clusterStartupRule.startServerVM(5, locator0Port, locator1Port);
+//    server4 = clusterStartupRule.startServerVM(6, locator0Port, locator1Port);
 
     int l0Port = locator0Port;
     int l1Port = locator1Port;
@@ -91,9 +91,9 @@ public class ClientConnectionRestoreDUnitTest {
     Properties clientProps = new Properties();
 
     ClientVM client0 =
-        clusterStartupRule.startClientVM(10, clientProps, cacheSetup);
+        clusterStartupRule.startClientVM(5, clientProps, cacheSetup);
     ClientVM client1 =
-        clusterStartupRule.startClientVM(11, clientProps, cacheSetup);
+        clusterStartupRule.startClientVM(6, clientProps, cacheSetup);
     ClientVM client2 =
         clusterStartupRule.startClientVM(7, clientProps, cacheSetup);
     ClientVM client3 =
@@ -124,7 +124,7 @@ public class ClientConnectionRestoreDUnitTest {
       });
       System.out
           .println(LOG_PREFIX + ": serverName: " + cache.getInternalDistributedSystem().getName());
-    }, server0, server1, server2, server3, server4);
+    }, server0, server1, server2);
 
     // on each client create the proxies for the regions they are interested in
     IntStream.range(0, 5).forEach(count -> clientVMS[count].invoke(() -> {
@@ -144,6 +144,8 @@ public class ClientConnectionRestoreDUnitTest {
 
   @Test
   public void serverShutdownDoesNotCauseConnectionIssuesForClientsDuringOperations() {
+//    seedBuckets(REGION_PARTITION_BASENAME);
+//    seedBuckets(REGION_REPLICATE_BASENAME);
 
     List<AsyncInvocation> clientRegionInvocations = startPuts(REGION_PARTITION_BASENAME);
     clientRegionInvocations.addAll(startPuts(REGION_REPLICATE_BASENAME));
@@ -208,7 +210,7 @@ public class ClientConnectionRestoreDUnitTest {
       String regionName = regionType + count;
       ClientCache clientCache = ClusterStartupRule.getClientCache();
       System.out.println(LOG_PREFIX + " readTimeout: " + clientCache.getDefaultPool().getReadTimeout());
-      Region<Integer, Integer> partitionRegion = clientCache.getRegion(regionName);
+      Region<Integer, Integer> region = clientCache.getRegion(regionName);
       int key = -1;
       Integer value;
       long run_until = System.currentTimeMillis() + 20000;
@@ -217,12 +219,12 @@ public class ClientConnectionRestoreDUnitTest {
       do {
         key = (key + 1) % KEY_SET_SIZE;
         try {
-          value = partitionRegion.get(key);
+          value = region.get(key);
           if (value == null) {
             value = 0;
           }
           value++;
-          partitionRegion.put(key, value);
+          region.put(key, value);
         } catch (Throwable unexpected) {
           // Report the unexpected exception and stop doing operations.
           System.out.println(
@@ -235,6 +237,52 @@ public class ClientConnectionRestoreDUnitTest {
     })).collect(Collectors.toList());
 
     return invocations;
+  }
+
+  private void seedBuckets(String regionType) {
+    IntStream.range(0, 5).forEach(count -> clientVMS[count].invoke(() -> {
+      String regionName = regionType + count;
+      ClientCache clientCache = ClusterStartupRule.getClientCache();
+      Region<Integer, Integer> region = clientCache.getRegion(regionName);
+      int key = -1;
+      Integer value;
+
+      System.out.println(LOG_PREFIX + ": start " + "[client" + count + "]");
+      do {
+        key = key + 1;
+        try {
+          value = region.get(key);
+          if (value == null) {
+            value = 0;
+          }
+          value++;
+          region.put(key, value);
+        } catch (Throwable unexpected) {
+          // Report the unexpected exception and stop doing operations.
+          System.out.println(
+              LOG_PREFIX + ": exception key: " + key + " [client" + count + "] " + unexpected);
+          throw unexpected;
+        }
+      } while (key < 113);
+    }));
+
+  }
+
+  private void getPutValue(int count, Region<Integer, Integer> region, int key) {
+    Integer value;
+    try {
+      value = region.get(key);
+      if (value == null) {
+        value = 0;
+      }
+      value++;
+      region.put(key, value);
+    } catch (Throwable unexpected) {
+      // Report the unexpected exception and stop doing operations.
+      System.out.println(
+          LOG_PREFIX + ": exception key: " + key + " [client" + count + "] " + unexpected);
+      throw unexpected;
+    }
   }
 
   private void dumpThreads() {
@@ -261,7 +309,7 @@ public class ClientConnectionRestoreDUnitTest {
       });
 
       System.out.println(stringBuilder);
-    }, server0, server1, server2, server3, server4);
+    }, server0, server1, server2);
   }
 
 }
