@@ -121,6 +121,7 @@ public class DestroyPartitionedRegionMessage extends PartitionMessage {
     DestroyPartitionedRegionMessage m =
         new DestroyPartitionedRegionMessage(recipients, r, resp, event, serials);
     m.setTransactionDistributed(r.getCache().getTxManager().isDistributed());
+    logger.warn("gem-3517 DestroyPartitionedRegionMessage.send message={}; recipients={}", m, recipients, new Exception());
     r.getDistributionManager().putOutgoing(m);
     return resp;
   }

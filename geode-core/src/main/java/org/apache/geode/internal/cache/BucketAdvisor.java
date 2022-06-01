@@ -887,6 +887,7 @@ public class BucketAdvisor extends CacheDistributionAdvisor {
       }
     } finally {
       if (lostPrimary) {
+        logger.warn("gem-3617: lost primary ", new Exception());
         invokeAfterSecondaryInPartitionListeners();
         Bucket br = regionAdvisor.getBucket(getBucket().getId());
         if (br instanceof BucketRegion) {
@@ -903,6 +904,9 @@ public class BucketAdvisor extends CacheDistributionAdvisor {
       }
     }
 
+    logger.warn("gem-3616: need to volunteer for primary", new Exception());
+    logger.warn("gem-3617 BucketAdvisor.removePrimary bucket={}; needToVolunteerForPrimary={}"
+        , getBucket().getId(), needToVolunteerForPrimary);
     if (needToVolunteerForPrimary) {
       volunteerForPrimary();
     }
@@ -995,6 +999,8 @@ public class BucketAdvisor extends CacheDistributionAdvisor {
    */
   public void volunteerForPrimary() {
     InternalDistributedMember elector = primaryElector;
+    logger.warn("gem-3617 BucketAdvisor.volunteerForPrimary bucket={}; primaryElector={}",
+        getBucket().getId(), primaryElector, new Exception());
     if (elector != null && regionAdvisor.hasPartitionedRegion(elector)) {
       // another server will determine the primary node
       return;
