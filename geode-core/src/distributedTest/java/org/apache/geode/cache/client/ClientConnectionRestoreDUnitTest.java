@@ -60,8 +60,8 @@ public class ClientConnectionRestoreDUnitTest {
   @Rule
   public ClusterStartupRule clusterStartupRule = new ClusterStartupRule(11);
 
-//  private MemberVM server4;
-//  private MemberVM server3;
+  // private MemberVM server4;
+  // private MemberVM server3;
   private MemberVM server2;
   private MemberVM server1;
   private MemberVM server0;
@@ -76,8 +76,8 @@ public class ClientConnectionRestoreDUnitTest {
     server0 = clusterStartupRule.startServerVM(2, locator0Port, locator1Port);
     server1 = clusterStartupRule.startServerVM(3, locator0Port, locator1Port);
     server2 = clusterStartupRule.startServerVM(4, locator0Port, locator1Port);
-//    server3 = clusterStartupRule.startServerVM(5, locator0Port, locator1Port);
-//    server4 = clusterStartupRule.startServerVM(6, locator0Port, locator1Port);
+    // server3 = clusterStartupRule.startServerVM(5, locator0Port, locator1Port);
+    // server4 = clusterStartupRule.startServerVM(6, locator0Port, locator1Port);
 
     int l0Port = locator0Port;
     int l1Port = locator1Port;
@@ -144,8 +144,8 @@ public class ClientConnectionRestoreDUnitTest {
 
   @Test
   public void serverShutdownDoesNotCauseConnectionIssuesForClientsDuringOperations() {
-//    seedBuckets(REGION_PARTITION_BASENAME);
-//    seedBuckets(REGION_REPLICATE_BASENAME);
+    // seedBuckets(REGION_PARTITION_BASENAME);
+    // seedBuckets(REGION_REPLICATE_BASENAME);
 
     List<AsyncInvocation> clientRegionInvocations = startPuts(REGION_PARTITION_BASENAME);
     clientRegionInvocations.addAll(startPuts(REGION_REPLICATE_BASENAME));
@@ -168,7 +168,7 @@ public class ClientConnectionRestoreDUnitTest {
     });
 
     try {
-      Thread.sleep(4000);
+      Thread.sleep(10000);
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
@@ -193,7 +193,8 @@ public class ClientConnectionRestoreDUnitTest {
     GeodeAwaitility.await()
         .until(() -> clientRegionInvocations.stream().allMatch(AsyncInvocation::isDone));
 
-    boolean exceptionOccurred = clientRegionInvocations.stream().anyMatch(asyncInvocation -> asyncInvocation.exceptionOccurred());
+    boolean exceptionOccurred = clientRegionInvocations.stream()
+        .anyMatch(asyncInvocation -> asyncInvocation.exceptionOccurred());
     if (exceptionOccurred) {
       System.out.println(LOG_PREFIX + " stuff happened");
       dumpThreads();
@@ -206,35 +207,37 @@ public class ClientConnectionRestoreDUnitTest {
 
   private List<AsyncInvocation> startPuts(String regionType) {
 
-    List<AsyncInvocation> invocations = IntStream.range(0, 5).mapToObj(count -> clientVMS[count].invokeAsync(() -> {
-      String regionName = regionType + count;
-      ClientCache clientCache = ClusterStartupRule.getClientCache();
-      System.out.println(LOG_PREFIX + " readTimeout: " + clientCache.getDefaultPool().getReadTimeout());
-      Region<Integer, Integer> region = clientCache.getRegion(regionName);
-      int key = -1;
-      Integer value;
-      long run_until = System.currentTimeMillis() + 20000;
-
-      System.out.println(LOG_PREFIX + ": start " + "[client" + count + "]");
-      do {
-        key = (key + 1) % KEY_SET_SIZE;
-        try {
-          value = region.get(key);
-          if (value == null) {
-            value = 0;
-          }
-          value++;
-          region.put(key, value);
-        } catch (Throwable unexpected) {
-          // Report the unexpected exception and stop doing operations.
+    List<AsyncInvocation> invocations =
+        IntStream.range(0, 5).mapToObj(count -> clientVMS[count].invokeAsync(() -> {
+          String regionName = regionType + count;
+          ClientCache clientCache = ClusterStartupRule.getClientCache();
           System.out.println(
-              LOG_PREFIX + ": exception key: " + key + " [client" + count + "] " + unexpected);
-          throw unexpected;
-        }
-      } while (System.currentTimeMillis() < run_until);
-      System.out.println(LOG_PREFIX + ": finished " + "key: " + key + " [client" + count + "]"
-          + " [region: " + regionName + "]");
-    })).collect(Collectors.toList());
+              LOG_PREFIX + " readTimeout: " + clientCache.getDefaultPool().getReadTimeout());
+          Region<Integer, Integer> region = clientCache.getRegion(regionName);
+          int key = -1;
+          Integer value;
+          long run_until = System.currentTimeMillis() + 20000;
+
+          System.out.println(LOG_PREFIX + ": start " + "[client" + count + "]");
+          do {
+            key = (key + 1) % KEY_SET_SIZE;
+            try {
+              value = region.get(key);
+              if (value == null) {
+                value = 0;
+              }
+              value++;
+              region.put(key, value);
+            } catch (Throwable unexpected) {
+              // Report the unexpected exception and stop doing operations.
+              System.out.println(
+                  LOG_PREFIX + ": exception key: " + key + " [client" + count + "] " + unexpected);
+              throw unexpected;
+            }
+          } while (System.currentTimeMillis() < run_until);
+          System.out.println(LOG_PREFIX + ": finished " + "key: " + key + " [client" + count + "]"
+              + " [region: " + regionName + "]");
+        })).collect(Collectors.toList());
 
     return invocations;
   }
@@ -287,9 +290,12 @@ public class ClientConnectionRestoreDUnitTest {
 
   private void dumpThreads() {
     VMProvider.invokeInEveryMember(() -> {
-      StringBuilder stringBuilder = new StringBuilder(ClusterStartupRule.getCache().getInternalDistributedSystem().getName()).append("\n");
+      StringBuilder stringBuilder =
+          new StringBuilder(ClusterStartupRule.getCache().getInternalDistributedSystem().getName())
+              .append("\n");
       final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-      final ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), 100);
+      final ThreadInfo[] threadInfos =
+          threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), 100);
       System.out.println(LOG_PREFIX + " dumping threads");
 
       Arrays.stream(threadInfos).forEach(threadInfo -> {

@@ -32,6 +32,7 @@ import org.apache.geode.distributed.internal.InternalDistributedSystem;
 import org.apache.geode.distributed.internal.ReplyException;
 import org.apache.geode.distributed.internal.ReplyMessage;
 import org.apache.geode.distributed.internal.ReplyProcessor21;
+import org.apache.geode.distributed.internal.membership.InternalDistributedMember;
 import org.apache.geode.internal.Assert;
 import org.apache.geode.internal.cache.partitioned.PartitionMessage;
 import org.apache.geode.internal.cache.partitioned.RegionAdvisor;
@@ -121,8 +122,14 @@ public class DestroyPartitionedRegionMessage extends PartitionMessage {
     DestroyPartitionedRegionMessage m =
         new DestroyPartitionedRegionMessage(recipients, r, resp, event, serials);
     m.setTransactionDistributed(r.getCache().getTxManager().isDistributed());
-    logger.warn("gem-3517 DestroyPartitionedRegionMessage.send message={}; recipients={}", m, recipients, new Exception());
-    r.getDistributionManager().putOutgoing(m);
+    logger.warn("gem-3617 DestroyPartitionedRegionMessage.send message={}; recipients={}", m,
+        recipients, new Exception());
+    Set<InternalDistributedMember> internalDistributedMembers =
+        r.getDistributionManager().putOutgoing(m);
+    if (internalDistributedMembers != null && !internalDistributedMembers.isEmpty()) {
+      logger.warn("gem-3617 some members did not receive notification: {}",
+          internalDistributedMembers);
+    }
     return resp;
   }
 
