@@ -37,37 +37,44 @@ public abstract class VersionedThinDiskRegionEntryOffHeap extends VersionedThinD
     return factory;
   }
 
+  public static final ThreadLocal<Boolean> createEntry = ThreadLocal.withInitial(() -> false);
+
   private static class VersionedThinDiskRegionEntryOffHeapFactory implements RegionEntryFactory {
     @Override
     public RegionEntry createEntry(RegionEntryContext context, Object key, Object value) {
-      if (InlineKeyHelper.INLINE_REGION_KEYS) {
-        Class<?> keyClass = key.getClass();
-        if (keyClass == Integer.class) {
-          return new VersionedThinDiskRegionEntryOffHeapIntKey(context, (Integer) key, value);
-        } else if (keyClass == Long.class) {
-          return new VersionedThinDiskRegionEntryOffHeapLongKey(context, (Long) key, value);
-        } else if (keyClass == String.class) {
-          final String skey = (String) key;
-          final Boolean info = InlineKeyHelper.canStringBeInlineEncoded(skey);
-          if (info != null) {
-            final boolean byteEncoded = info;
-            if (skey.length() <= InlineKeyHelper.getMaxInlineStringKey(1, byteEncoded)) {
-              return new VersionedThinDiskRegionEntryOffHeapStringKey1(context, skey, value,
-                  byteEncoded);
-            } else {
-              return new VersionedThinDiskRegionEntryOffHeapStringKey2(context, skey, value,
-                  byteEncoded);
+      createEntry.set(true);
+      try {
+        if (InlineKeyHelper.INLINE_REGION_KEYS) {
+          Class<?> keyClass = key.getClass();
+          if (keyClass == Integer.class) {
+            return new VersionedThinDiskRegionEntryOffHeapIntKey(context, (Integer) key, value);
+          } else if (keyClass == Long.class) {
+            return new VersionedThinDiskRegionEntryOffHeapLongKey(context, (Long) key, value);
+          } else if (keyClass == String.class) {
+            final String skey = (String) key;
+            final Boolean info = InlineKeyHelper.canStringBeInlineEncoded(skey);
+            if (info != null) {
+              final boolean byteEncoded = info;
+              if (skey.length() <= InlineKeyHelper.getMaxInlineStringKey(1, byteEncoded)) {
+                return new VersionedThinDiskRegionEntryOffHeapStringKey1(context, skey, value,
+                    byteEncoded);
+              } else {
+                return new VersionedThinDiskRegionEntryOffHeapStringKey2(context, skey, value,
+                    byteEncoded);
+              }
             }
+          } else if (keyClass == UUID.class) {
+            return new VersionedThinDiskRegionEntryOffHeapUUIDKey(context, (UUID) key, value);
           }
-        } else if (keyClass == UUID.class) {
-          return new VersionedThinDiskRegionEntryOffHeapUUIDKey(context, (UUID) key, value);
         }
+        return new VersionedThinDiskRegionEntryOffHeapObjectKey(context, key, value);
+      } finally {
+        createEntry.set(false);
       }
-      return new VersionedThinDiskRegionEntryOffHeapObjectKey(context, key, value);
     }
 
     @Override
-    public Class getEntryClass() {
+    public Class<?> getEntryClass() {
       // The class returned from this method is used to estimate the memory size.
       // This estimate will not take into account the memory saved by inlining the keys.
       return VersionedThinDiskRegionEntryOffHeapObjectKey.class;

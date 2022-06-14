@@ -1451,6 +1451,9 @@ public interface DiskEntry extends RegionEntry {
                 final int entryValSize = region.calculateRegionEntryValueSize(entry);
                 try {
                   if (Token.isRemovedFromDisk(entryVal)) {
+                    logger.info(
+                        "XXX Helper.writeEntryToDisk about to remove entryKey={}; ; entryVal={}; entry={}",
+                        entry.getKey(), entryVal, entry);
                     if (region.isThisRegionBeingClosedOrDestroyed()) {
                       return;
                     }

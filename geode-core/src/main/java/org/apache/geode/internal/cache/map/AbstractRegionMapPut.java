@@ -283,7 +283,13 @@ public abstract class AbstractRegionMapPut {
     } finally {
       unsetOldValueForDelta();
       if (isCreate() && shouldCreatedEntryBeRemoved()) {
+        logger.info(
+            "XXX AbstractRegionMapPut.doPutOnSynchronizedRegionEntry about to removeEntry event={}; regionEntry={}",
+            getEvent(), getRegionEntry());
         getRegionMap().removeEntry(getEvent().getKey(), getRegionEntry(), false);
+        logger.info(
+            "XXX AbstractRegionMapPut.doPutOnSynchronizedRegionEntry done removeEntry event={}; regionEntry={}",
+            getEvent(), getRegionEntry());
       }
     }
   }

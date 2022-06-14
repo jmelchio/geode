@@ -1273,6 +1273,13 @@ public class DiskStoreImpl implements DiskStore {
       // finished. We check if clear() has happened after ARM.putEntryIfAbsent()
       if (item instanceof AsyncDiskEntry) {
         AsyncDiskEntry ade = (AsyncDiskEntry) item;
+        if (ade.de != null) {
+          Token token = ade.de.getValueAsToken();
+          if (Token.isRemovedFromDisk(token)) {
+            logger.info("XXX DiskStoreImpl.addAsyncItem key={}; diskId={}; token={}; diskEntry={}",
+                ade.de.getKey(), ade.de.getDiskId(), token, ade.de, new Exception());
+          }
+        }
         DiskRegion dr = ade.region.getDiskRegion();
         if (dr.didClearCountChange() && !ade.versionOnly) {
           return;

@@ -37,6 +37,7 @@ import org.apache.geode.internal.offheap.annotations.Released;
 import org.apache.geode.internal.offheap.annotations.Retained;
 import org.apache.geode.internal.offheap.annotations.Unretained;
 import org.apache.geode.internal.util.concurrent.CustomEntryConcurrentHashMap.HashEntry;
+import org.apache.geode.logging.internal.log4j.api.LogService;
 
 /*
  * macros whose definition changes this class:
@@ -140,6 +141,13 @@ public class VersionedThinDiskRegionEntryOffHeapStringKey1
   @Override
   @Unretained
   protected void setValueField(@Unretained final Object value) {
+    if (!createEntry.get()
+        && (Token.DESTROYED.equals(value) || Token.REMOVED_PHASE1.equals(value)
+            || Token.REMOVED_PHASE2.equals(value))) {
+      LogService.getLogger().info(
+          "XXX VersionedThinDiskRegionEntryOffHeapStringKey1.setValueField value={}", value,
+          new Exception());
+    }
     OffHeapRegionEntryHelper.setValue(this, value);
   }
 
